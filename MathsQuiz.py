@@ -645,6 +645,34 @@ class Objective2C1:
             question = NumberBonds(20, 100, 10)
         self.correct_answer = question.correct_answer
         self.question_text = question.question_text
+        
+        
+class AdditionOrSubtraction:
+    def __init__(self, first_number, second_number):
+        self.add = random_boolean()
+        self.first_number = first_number
+        self.second_number = second_number
+        self.correct_answer = self.correct_answer()
+        self.question_text = self.question_text()
+
+    def correct_answer(self):
+        if self.add:
+            return self.first_number + self.second_number
+        else:
+            return self.second_number
+
+    def question_text(self):
+        if self.add:
+            "What is {} + {}?".format(self.first_number, self.second_number)
+        else:
+            "What is {} - {}?".format(self.first_number + self.second_number, self.second_number)
+
+
+class Objective3C1:
+    def __init__(self):
+        question = AdditionOrSubtraction(1, 2)
+        self.correct_answer = question.correct_answer
+        self.question_text = question.question_text
 
 
 if __name__ == '__main__':

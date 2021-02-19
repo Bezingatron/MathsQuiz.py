@@ -631,7 +631,7 @@ class NumberBonds:
 
 class Objective1C1:
     def __init__(self):
-        question = NumberBonds(11, 20, 1)
+        question = NumberBonds(8, 20, 1)
         self.correct_answer = question.correct_answer
         self.question_text = question.question_text
 
@@ -648,14 +648,14 @@ class Objective2C1:
 
 
 class AdditionOrSubtraction:
-    def __init__(self, total, number):
+    def __init__(self, total, number, switch=False):
         if number > total:
             number, total = total, number
         self.add = random_boolean()
         self.total = total
         self.number = number
         self.second_number = self.total - self.number
-        if self.second_number > self.number:
+        if self.second_number > self.number or switch:
             self.number, self.second_number = self.second_number, self.number
         self.correct_answer = self.correct_answer()
         self.question_text = self.question_text()
@@ -696,6 +696,8 @@ class Objective5C1:
     def __init__(self):
         total = self.generate_total()
         number = self.generate_number()
+        while -500 < total - number < 500:
+            number = self.generate_number()
         question = AdditionOrSubtraction(total, number)
         self.correct_answer = question.correct_answer
         self.question_text = question.question_text
@@ -707,16 +709,138 @@ class Objective5C1:
         return total
 
     def generate_number(self):
-        total = random.randint(1000, 9999)
-        while total % 10 == 0 or total % 100 < 10:
-            total = random.randint(1000, 9999)
-        return total
+        number = random.randint(1000, 9999)
+        while number % 10 == 0 or number % 100 < 10:
+            number = random.randint(1000, 9999)
+        return number
+
+
+class Objective1C2a:
+    def __init__(self):
+        self.total = self.generate_total()
+        number = self.generate_number()
+        question = AdditionOrSubtraction(self.total, number)
+        self.correct_answer = question.correct_answer
+        self.question_text = question.question_text
+
+    def generate_total(self):
+        return random.randint(8, 20)
+
+    def generate_number(self):
+        return random.randint(0, self.total)
+
+
+class Objective2C2a:
+    def __init__(self):
+        self.type = random.randint(1, 3)
+        if self.type == 3:
+            number1 = random.randint(1, 9)
+            number2 = random.randint(1, 9)
+            number3 = random.randint(1, 9)
+            self.correct_answer = number1 + number2 + number3
+            self.question_text = "What is {} + {} + {}?".format(number1, number2, number3)
+        else:
+            self.total = self.generate_total()
+            number = self.generate_number()
+            question = AdditionOrSubtraction(self.total, number, True)
+            self.correct_answer = question.correct_answer
+            self.question_text = question.question_text
+
+    def generate_total(self):
+        number = random.randint(30, 99)
+        while number % 10 == 0:
+            number = random.randint(30, 99)
+        return number
+
+    def generate_number(self):
+        number = random.randint(3, 9)
+        if self.type == 1:
+            return number
+        else:
+            while number * 10 > self.total or -10 < number * 10 - self.total < 10:
+                number = random.randint(1, 9)
+            return number * 10
+
+
+class Objective3C2:
+    def __init__(self):
+        self.total = self.generate_total()
+        number = self.generate_number()
+        question = AdditionOrSubtraction(self.total, number)
+        self.correct_answer = question.correct_answer
+        self.question_text = question.question_text
+
+    def generate_total(self):
+        number = random.randint(300, 999)
+        while number % 10 == 0:
+            number = random.randint(300, 999)
+        return number
+
+    def generate_number(self):
+        number =  random.randint(50, self.total - 100)
+        while number % 10 == 0:
+            number = random.randint(50, self.total - 100)
+        return number
+
+
+class Objective4C2:
+    def __init__(self):
+        self.total = self.generate_total()
+        number = self.generate_number()
+        question = AdditionOrSubtraction(self.total, number)
+        self.correct_answer = question.correct_answer
+        self.question_text = question.question_text
+
+    def generate_total(self):
+        number = random.randint(3000, 9999)
+        while number % 10 == 0:
+            number = random.randint(3000, 9999)
+        return number
+
+    def generate_number(self):
+        number = random.randint(500, self.total - 1000)
+        while number % 10 == 0:
+            number = random.randint(500, self.total - 1000)
+        return number
+
+
+class Objective5C2:
+    def __init__(self):
+        self.total = self.generate_total()
+        number = self.generate_number()
+        question = AdditionOrSubtraction(self.total, number)
+        self.correct_answer = question.correct_answer
+        self.question_text = question.question_text
+
+    def generate_total(self):
+        number = random.randint(80000, 999999)
+        while number % 10 == 0:
+            number = random.randint(80000, 999999)
+        return number
+
+    def generate_number(self):
+        number = random.randint(50000, self.total - 30000)
+        while number % 10 == 0:
+            number = random.randint(50000, self.total - 30000)
+        return number
+
+
+class Inverse:
+    def __init__(self, total, number):
+        self.correct_answer = self.correct_answer()
+        self.question_text = self.question_text()
+
+    def correct_answer(self):
+        return 1
+
+    def question_text(self):
+        return 1
 
 
 if __name__ == '__main__':
     data = Data()
 
     for i in range(5):
-        question2 = Question(Objective3C1())
+        question2 = Question(Objective5C2())
 
     print("You scored {} out of {}.".format(data.score, data.questions_asked))

@@ -134,9 +134,6 @@ class Objective2N1:
 class Objective3N1:
     def __init__(self):
         basic = BasicN1(3, (4, 8, 50, 100))
-        self.direction = basic.direction
-        self.multiple = basic.multiple
-        self.highest_value = basic.highest_value
         self.correct_answer = basic.correct_answer
         self.question_text = basic.question_text
 
@@ -144,9 +141,6 @@ class Objective3N1:
 class Objective4N1:
     def __init__(self):
         basic = BasicN1(4, (6, 7, 9, 25, 1000))
-        self.direction = basic.direction
-        self.multiple = basic.multiple
-        self.highest_value = basic.highest_value
         self.correct_answer = basic.correct_answer
         self.question_text = basic.question_text
 
@@ -682,7 +676,7 @@ class Objective3C1:
         self.question_text = question.question_text
 
     def generate_total(self):
-        total = random.randint(100, 999)
+        total = random.randint(110, 999)
         while total % 10 == 0 or total % 100 < 10:
             total = random.randint(110, 999)
         return total
@@ -825,22 +819,81 @@ class Objective5C2:
         return number
 
 
-class Inverse:
-    def __init__(self, total, number):
-        self.correct_answer = self.correct_answer()
+class InverseAddSub:
+    def __init__(self, number, total):
+        self.number = number
+        self.total = total
+        if self.number > self.total:
+            self.number, self.total = self.total, self.number
+        self.add = random_boolean()
+        self.correct_answer = self.number
         self.question_text = self.question_text()
 
-    def correct_answer(self):
-        return 1
+    def question_text(self):
+        if self.add:
+            return "{} + ? = {}".format(self.total - self.number, self.total)
+        else:
+            return "{} - ? = {}".format(self.total, self.total - self.number)
+
+
+class InverseMulDiv:
+    def __init__(self, multiple1, multiple2):
+        self.multiple1 = multiple1
+        self.multiple2 = multiple2
+        self.multiply = random_boolean()
+        self.correct_answer = self.multiple2
+        self.question_text = self.question_text()
 
     def question_text(self):
-        return 1
+        if self.multiply:
+            return "{} x ? = {}".format(self.multiple1, self.multiple1 * self.multiple2)
+        else:
+            return "{} ÷ ? = {}".format(self.multiple1 * self.multiple2, self.multiple1)
+
+
+class Objective2C3:
+    def __init__(self):
+        self.total = self.generate_total()
+        number = self.generate_number()
+        question = InverseAddSub(number, self.total)
+        self.correct_answer = question.correct_answer
+        self.question_text = question.question_text
+
+    def generate_total(self):
+        number = random.randint(40, 99)
+        while number % 10 == 0:
+            number = random.randint(40, 99)
+        return number
+
+    def generate_number(self):
+        number = random.randint(20, self.total - 20)
+        while number % 10 == 0:
+            number = random.randint(20, self.total - 20)
+        return number
+
+class Objective3C3:
+    def __init__(self):
+        self.total = self.generate_total()
+        number = self.generate_number()
+        question = InverseAddSub(number, self.total)
+        self.correct_answer = question.correct_answer
+        self.question_text = question.question_text
+
+    def generate_total(self):
+        total = random.randint(110, 999)
+        while total % 10 == 0 or total % 100 < 10:
+            total = random.randint(110, 999)
+        return total
+
+    def generate_number(self):
+        columns = random.randint(1, 3)
+        return random.randint(1, 9) * 10 ** (columns - 1)
 
 
 if __name__ == '__main__':
     data = Data()
 
     for i in range(5):
-        question2 = Question(Objective5C2())
+        question = Question(Objective4N1())
 
     print("You scored {} out of {}.".format(data.score, data.questions_asked))

@@ -1,8 +1,13 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtWidgets import *
+from PyQt5.QtCore import QAbstractTableModel, Qt
+from questionbank import Question as Qu
 import sys
+import os
 import pyqtgraph as pg
 import random
+import sqlite3
+import pandas as pd
 
 
 button_font = QtGui.QFont()
@@ -42,7 +47,193 @@ question_font = QtGui.QFont()
 question_font.setFamily("Segoe UI")
 question_font.setPointSize(18)
 
-users = {"Michael Berry": "ABC", "Barry": "ABCD"}
+objectives_tuple = ("1N1", "2N1", "3N1", "4N1", "5N1", "1N2a", "1N2b", "1N2c", "2N2a", "2N2b", "3N2a", "3N2b", "4N2a",
+                    "4N2b", "5N2", "6N2", "2N3", "3N3", "4N3a", "4N3b", "5N3a", "5N3b", "6N3", "1N4", "2N4", "3N4",
+                    "4N4a", "4N4b", "5N4", "6N4", "4N5", "5N5", "6N5", "2N6", "3N6", "4N6", "5N6", "6N6", "1C1", "2C1",
+                    "3C1", "5C1", "1C2a", "1C2b", "2C2a", "2C2b", "3C2", "4C2", "5C2", "2C3", "3C3", "4C3", "5C3",
+                    "6C3", "1C4", "2C4", "3C4", "4C4", "5C4", "6C4", "5C5a", "5C5b", "5C5c", "5C5d", "6C5", "2C6",
+                    "3C6", "4C6a", "4C6b", "4C6c", "5C6a", "5C6b", "6C6", "2C7", "3C7", "4C67", "5C7a", "5C7b", "6C7a",
+                    "6C7b", "6C7c", "1C8", "2C8", "3C8", "4C8", "5C8a", "5C8b", "5C8c", "6C8", "2C9a", "2C9b", "6C9",
+                    "1F1a", "1F1b", "2F1a", "2F1b", "3F1a", "3F1b", "3F1c", "4F1", "2F2", "3F2", "4F2", "5F2a", "5F2b",
+                    "6F2", "3F3", "5F3", "6F3", "3F4", "4F4", "5F4", "6F4", "5F5", "6F5a", "6F5b", "4F6a", "4F6b",
+                    "5F6a", "5F6b", "6F6", "4F7", "5F7", "4F8", "5F8", "4F9", "6F9a", "6F9b", "6F9c", "3F10", "4F10a",
+                    "4F10b", "5F10", "6F10", "5F11", "6F11", "5F12", "6R1", "6R2", "6R3", "6R4", "6A1", "6A2", "6A3",
+                    "6A4", "6A5", "1M1", "2M1", "3M1a", "3M1b", "3M1c", "4M1", "1M2", "2M2", "3M2a", "3M2b", "3M2c",
+                    "4M2", "1M3", "2M3a", "2M3b", "1M4a", "1M4b", "1M4c", "2M4a", "2M4b", "2M4c", "3M4a", "3M4b",
+                    "3M4c", "3M4d", "3M4e", "3M4f", "4M4a", "4M4b", "4M4c", "5M4", "4M5", "5M5", "6M5", "5M6", "6M6",
+                    "3M7", "4M7a", "4M7b", "5M7a", "5M7b", "6M7a", "6M7b", "6M7c", "5M8", "6M8a", "6M8b", "2M9", "3M9a",
+                    "3M9b", "3M9c", "3M9d", "4M9", "5M9a", "5M9b", "5M9c", "5M9d", "6M9", "1G1a", "1G1b", "2G1a",
+                    "2G1b", "2G2a", "2G2b", "3G2", "4G2a", "4G2b", "4G2c", "5G2a", "5G2b", "6G2a", "6G2b", "2G3",
+                    "3G3a", "3G3b", "5G3", "6G3a", "6G3b", "3G4a", "3G4b", "4G4", "5G4a", "5G4b", "5G4c", "6G4a",
+                    "6G4b", "6G5", "2P1", "1P2", "2P2", "4P2", "5P2", "6P2", "4P3a", "4P3b", "6P3", "2S1", "3S1", "4S1",
+                    "5S1", "6S1", "2S2a", "2S2b", "3S2", "4S2", "5S2", "6S3")
+
+strand_index = {
+    "Number and place value": "N", "Calculations": "C", "Fractions, decimals and percentages": "F",
+    "Ratio and proportion": "R", "Algebra": "A", "Measurement": "M", "Shape": "G",
+    "Position and direction": "P", "Statistics": "S"
+}
+
+substrand_index = {
+    "Counting in multiples": "N1", "Read, write, order & compare": "N2", "Place value": "N3",
+    "Identify, represent, estimate; rounding": "N4", "Negative numbers": "N5", "Number problems": "N6",
+    "Add/subtract mentally": "C1", "Add/subtract using written methods": "C2", "Estimate and use inverses": "C3",
+    "Add/subtract to solve problems": "C4", "Properties of number": "C5", "Multiply/divide mentally": "C6",
+    "Multiply/divide using written methods": "C7", "Solve problems using all 4 operations": "C8",
+    "Order of operations": "C9", "Recognise & count fractions": "F1", "Equivalent fractions": "F2",
+    "Comparing & ordering fractions": "F3", "Add/subtract fractions": "F4", "Multiply/divide fractions": "F5",
+    "Fractions/decimals equivalence": "F6", "Rounding decimals": "F7", "Compare & order decimals": "F8",
+    "Multiply/divide decimals": "F9", "Solve fraction & decimal problems": "F10",
+    "Fractions/decimals/% equivalence": "F11", "Solve percentage problems": "F12",
+    "Relative sizes and similarity": "R1", "Use of percentages for comparison": "R2", "Scale factors": "R3",
+    "Unequal sharing and grouping": "R4", "Missing number problems in algebra": "A1",
+    "Simple formulae expressed in words": "A2", "Generate & describe linear number sequences": "A3",
+    "Number sentences involving two unknowns": "A4", "Enumerate all combinations of two variables": "A5",
+    "Compare, describe and order measures": "M1", "Estimate, measure and read scales": "M2", "Money": "M3",
+    "Time": "M4", "Convert between metric units": "M5", "Convert metric/imperial": "M6", "Perimeter and area": "M7",
+    "Volume": "M8", "Solve problems involving measures": "M9", "Compare and sort shapes": "G1",
+    "Describe properties and classify shapes": "G2", "Draw & make shapes & relate 2-D to 3-D": "G3",
+    "Angles – measuring and properties": "G4", "Circles": "G5", "Order in patterns and sequences": "P1",
+    "Describe position, direction and movement": "P2", "Co-ordinates": "P3", "Interpret and represent data": "S1",
+    "Solve problems involving data": "S2a", "Mean average": "S3"
+}
+
+
+class Data:
+    def __init__(self):
+        self.score = 0
+        self.users = {}
+        self.data_frame = []
+        self.total_quizzes = 0
+        self.total_questions = 0
+        self.top_score = ""
+        self.top_area = ""
+        self.bottom_area = ""
+
+    def set_stats(self):
+        self.set_total_quizzes()
+        self.set_total_questions()
+        self.set_top_score()
+        self.set_top_area()
+        self.set_bottom_area()
+        home_screen.statsLabel2.setText("{}\n\n{}\n\n{}\n\n{}\n\n{}".format(self.total_quizzes, self.total_questions,
+                                                                            self.top_score, self.top_area,
+                                                                            self.bottom_area))
+
+    def set_total_quizzes(self):
+        connection = sqlite3.connect("{}.db".format(login.username))
+        data_frame = pd.read_sql_query("SELECT * FROM QUIZ", connection)
+        try:
+            self.total_quizzes = int((data_frame['Quiz number'].max()))
+        except:
+            pass
+        connection.close()
+
+    def set_total_questions(self):
+        connection = sqlite3.connect("{}.db".format(login.username))
+        data_frame = pd.read_sql_query("SELECT * FROM QUIZ", connection)
+        self.total_questions = data_frame.shape[0]
+        connection.close()
+
+    def set_top_score(self):
+        connection = sqlite3.connect("{}.db".format(login.username))
+        data_frame = pd.read_sql_query("SELECT * FROM QUIZ", connection)
+        total_quizzes = [i for i in range(1, self.total_quizzes + 1)]
+        quiz_dictionary = {}
+        for entry in total_quizzes:
+            marks = 0
+            total = 0
+            for row in data_frame.itertuples():
+                if int(row[2]) == entry:
+                    marks += int(row[8])
+                    total += 1
+            quiz_dictionary[entry] = round(100 * (marks / total))
+
+        maximum = (max(quiz_dictionary, key=quiz_dictionary.get))
+        self.top_score = "{}%    (Quiz {})".format(quiz_dictionary[maximum], maximum)
+        connection.close()
+
+    def set_top_area(self):
+        connection = sqlite3.connect("{}.db".format(login.username))
+        data_frame = pd.read_sql_query("SELECT * FROM QUIZ", connection)
+        quiz_dictionary = {}
+        for key in strand_index:
+            value = strand_index[key]
+            marks = 0
+            total = 0
+            for row in data_frame.itertuples():
+                if (row[4][1]) == value:
+                    marks += int(row[8])
+                    total += 1
+            if total == 0:
+                pass
+            elif marks == 0:
+                quiz_dictionary = 0
+            else:
+                quiz_dictionary[value] = round(100 * (marks / total))
+
+        maximum = (max(quiz_dictionary, key=quiz_dictionary.get))
+        switch = {}
+        for key in strand_index:
+            switch[strand_index[key]] = key
+        self.top_area = switch[maximum]
+        connection.close()
+
+    def set_bottom_area(self):
+        connection = sqlite3.connect("{}.db".format(login.username))
+        data_frame = pd.read_sql_query("SELECT * FROM QUIZ", connection)
+        quiz_dictionary = {}
+        for key in strand_index:
+            value = strand_index[key]
+            marks = 0
+            total = 0
+            for row in data_frame.itertuples():
+                if (row[4][1]) == value:
+                    marks += int(row[8])
+                    total += 1
+            if total == 0:
+                pass
+            elif marks == 0:
+                quiz_dictionary = 0
+            else:
+                quiz_dictionary[value] = round(100 * (marks / total))
+
+        minimum = (min(quiz_dictionary, key=quiz_dictionary.get))
+        switch = {}
+        for key in strand_index:
+            switch[strand_index[key]] = key
+        self.bottom_area = switch[minimum]
+        connection.close()
+
+
+def increase_score():
+    data.score += 1
+
+
+def load_usernames_passwords():
+    if os.path.isfile("Usernames and passwords.db"):
+        connection = sqlite3.connect("Usernames and passwords.db")
+        c = connection.cursor()
+        c.execute("SELECT Username,Password from USERS")
+        result = c.fetchall()
+        for Username, Password in result:
+            data.users[Username] = Password
+    else:
+        connection = sqlite3.connect("Usernames and passwords.db")
+        c = connection.cursor()
+        c.execute("""CREATE TABLE USERS
+                        ([generated_id] INTEGER PRIMARY KEY, [Username] text, [Password] text, [Class] text) """)
+        connection.commit()
+        connection.close()
+
+
+def read_data(username):
+    connection = sqlite3.connect("{}.db".format(username))
+    data.data_frame = pd.read_sql_query("SELECT * FROM QUIZ",
+                                        connection)
+    data.data_frame.pop("generated_id")
+    data.data_frame.pop("Username")
+    connection.close()
 
 
 class MyWindow(QMainWindow):
@@ -139,8 +330,8 @@ class LoginScreen:
         self.newUserButton.clicked.connect(self.new_user)
 
     def check_login(self):
-        if self.usernameEntry.text() in users:
-            if self.passwordEntry.text() == users.get(self.usernameEntry.text()):
+        if self.usernameEntry.text() in data.users:
+            if self.passwordEntry.text() == data.users.get(self.usernameEntry.text()):
                 self.username = self.usernameEntry.text()
                 self.login_user()
             else:
@@ -157,10 +348,13 @@ class LoginScreen:
         self.hide_widgets()
         home_screen.usernameLabel.setText(self.username)
         home_screen.show_widgets()
+        read_data(self.username)
+        data.set_stats()
 
     def new_user(self):
         self.hide_widgets()
-        home_screen.show_widgets()
+        new_user.show_widgets()
+        new_user.newUsernameEntry.setFocus()
 
     def show_widgets(self):
         self.loginBackgroundLabel.show()
@@ -182,12 +376,156 @@ class LoginScreen:
         self.newUserButton.hide()
 
 
+class NewUserScreen:
+    def __init__(self):
+        # New user title label
+        self.newUserTitleLabel = QtWidgets.QLabel("Fill in the boxes to\ncreate your profile", win)
+        place_widget_centre(self.newUserTitleLabel, 1000, 115, 160)
+        self.newUserTitleLabel.setStyleSheet("color: rgb(255, 255, 255);")
+        self.newUserTitleLabel.setFont(sub_title_font)
+        self.newUserTitleLabel.setAlignment(QtCore.Qt.AlignCenter)
+
+        # Return to login screen button
+        self.returnToLoginButton = QtWidgets.QPushButton(win)
+        place_widget_centre(self.returnToLoginButton, 200, 60, 850)
+        self.returnToLoginButton.setFont(button_font)
+        self.returnToLoginButton.setStyleSheet("background-color: rgb(169, 169, 169);")
+        self.returnToLoginButton.setText("Return to login")
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(50)
+        self.returnToLoginButton.setGraphicsEffect(shadow)
+        self.returnToLoginButton.clicked.connect(self.return_to_login)
+
+        # New username entry box
+        self.newUsernameEntry = QtWidgets.QLineEdit(win)
+        place_widget_centre(self.newUsernameEntry, 350, 60, 285)
+        self.newUsernameEntry.setFont(entry_box_font)
+        self.newUsernameEntry.setStyleSheet("background-color: rgb(255, 255, 255);")
+        self.newUsernameEntry.setText("")
+        self.newUsernameEntry.setPlaceholderText("Username")
+
+        # New password entry box
+        self.newPasswordEntry = QtWidgets.QLineEdit(win)
+        place_widget_centre(self.newPasswordEntry, 350, 60, 360)
+        self.newPasswordEntry.setFont(entry_box_font)
+        self.newPasswordEntry.setStyleSheet("background-color: rgb(255, 255, 255);")
+        self.newPasswordEntry.setText("")
+        self.newPasswordEntry.setPlaceholderText("Password")
+
+        # Class entry box
+        self.newUserClassEntry = QtWidgets.QLineEdit(win)
+        place_widget_centre(self.newUserClassEntry, 350, 60, 435)
+        self.newUserClassEntry.setFont(entry_box_font)
+        self.newUserClassEntry.setStyleSheet("background-color: rgb(255, 255, 255);")
+        self.newUserClassEntry.setText("")
+        self.newUserClassEntry.setPlaceholderText("Class")
+
+        # New user error label
+        self.newUserErrorLabel = QtWidgets.QLabel("Username already taken", win)
+        place_widget_centre(self.newUserErrorLabel, 350, 40, 510)
+        self.newUserErrorLabel.setStyleSheet("color: rgb(255,219,88);")
+        self.newUserErrorLabel.setFont(button_font_small)
+        self.newUserErrorLabel.setAlignment(QtCore.Qt.AlignCenter)
+
+        # Create new user button
+        self.createNewUserButton = QtWidgets.QPushButton(win)
+        place_widget_centre(self.createNewUserButton, 350, 60, 580)
+        self.createNewUserButton.setFont(button_font)
+        self.createNewUserButton.setStyleSheet("background-color: rgb(170, 170, 255);")
+        self.createNewUserButton.setText("Create new user")
+        self.createNewUserButton.clicked.connect(self.create_new_user)
+
+    def show_widgets(self):
+        self.newUserTitleLabel.show()
+        login.loginBackgroundLabel.show()
+        self.returnToLoginButton.show()
+        self.newUsernameEntry.show()
+        self.newPasswordEntry.show()
+        self.createNewUserButton.show()
+        self.newUserClassEntry.show()
+
+    def hide_widgets(self):
+        self.newUserTitleLabel.hide()
+        login.loginBackgroundLabel.hide()
+        self.returnToLoginButton.hide()
+        self.newUsernameEntry.hide()
+        self.newPasswordEntry.hide()
+        self.createNewUserButton.hide()
+        self.newUserClassEntry.hide()
+        self.newUserErrorLabel.hide()
+
+    def create_new_user(self):
+        if self.username_exists():
+            self.newUserErrorLabel.setText("Username already taken")
+            self.newUserErrorLabel.show()
+            self.newUsernameEntry.setText("")
+            self.newUsernameEntry.setFocus()
+        elif len(self.newUsernameEntry.text()) < 3:
+            self.newUserErrorLabel.setText("Username must be at least 3 characters long")
+            self.newUserErrorLabel.show()
+            self.newUsernameEntry.setText("")
+            self.newUsernameEntry.setFocus()
+        elif len(self.newPasswordEntry.text()) < 3:
+            self.newUserErrorLabel.setText("Password must be at least 3 characters long")
+            self.newUserErrorLabel.show()
+            self.newPasswordEntry.setText("")
+            self.newPasswordEntry.setFocus()
+        elif len(self.newUserClassEntry.text()) < 1:
+            self.newUserErrorLabel.setText("Class must be selected")
+            self.newUserErrorLabel.show()
+        else:
+            login.username = self.newUsernameEntry.text()
+            data.users[login.username] = self.newPasswordEntry.text()
+            self.add_user_to_database()
+            self.create_user_database()
+            self.hide_widgets()
+            home_screen.usernameLabel.setText(login.username)
+            self.newUsernameEntry.setText("")
+            self.newPasswordEntry.setText("")
+            self.newUserClassEntry.setText("")
+            home_screen.show_widgets()
+
+    def username_exists(self):
+        if os.path.isfile("{}.db".format(self.newUsernameEntry.text())):
+            return True
+        else:
+            return False
+
+    def add_user_to_database(self):
+        connection = sqlite3.connect("Usernames and passwords.db")
+        cursor = connection.cursor()
+        cursor.execute("""INSERT INTO USERS
+                                  (username, password, class)  VALUES  (?, ?, ?)""", (self.newUsernameEntry.text(),
+                                                                                      self.newPasswordEntry.text(),
+                                                                                      self.newUserClassEntry.text()))
+        connection.commit()
+        cursor.close()
+        data.users[self.newUsernameEntry.text()] = self.newPasswordEntry.text()
+
+    def create_user_database(self):
+        connection = sqlite3.connect("{}.db".format(login.username))
+        c = connection.cursor()
+        c.execute("""CREATE TABLE QUIZ
+                ([generated_id] INTEGER PRIMARY KEY, [Quiz number] integer, [Username] text, [Objective] text,
+                [Question] text, [Correct answer] text, [User answer] text, [Marks] integer) """)
+        connection.commit()
+        connection.close()
+
+    def return_to_login(self):
+        self.hide_widgets()
+        login.usernameEntry.setText("")
+        login.passwordEntry.setText("")
+        login.usernameEntry.setFocus()
+        login.show_widgets()
+
+
 class HomeScreen:
     def __init__(self):
-        self.year = "Year 1"
-        self.strand = "Number and place value"
-        self.substrand = "Counting in multiples"
-        self.objective = "1N1a"
+        self.year = ""
+        self.strand = ""
+        self.substrand = ""
+        self.objective = ""
+        self.chosen_objectives = []
 
         # Username label
         self.usernameLabel = QtWidgets.QLabel("No one", win)
@@ -221,44 +559,39 @@ class HomeScreen:
         self.statsBackgroundLabel.setGraphicsEffect(shadow)
 
         # Stats title label
-        self.statsTitleLabel = QtWidgets.QLabel("Stats", win)
+        self.statsTitleLabel = QtWidgets.QLabel(win)
         self.statsTitleLabel.setGeometry(200, 400, 400, 65)
         self.statsTitleLabel.setStyleSheet("text-decoration: underline;")
+        self.statsTitleLabel.setText("Stats")
         self.statsTitleLabel.setFont(sub_title_font)
         self.statsTitleLabel.setAlignment(QtCore.Qt.AlignLeft)
 
         # Stats label 1
-        self.statsLabel1 = QtWidgets.QLabel("Questions taken:\n\n"
-                                            "Questions answer:\n\n"
-                                            "Highest score:\n\n"
-                                            "Top maths areas:\n\n"
-                                            "Key target:", win)
-        self.statsLabel1.setGeometry(200, 475, 200, 400)
+        self.statsLabel1 = QtWidgets.QLabel(win)
+        self.statsLabel1.setGeometry(200, 475, 250, 400)
         self.statsLabel1.setStyleSheet("color: rgb(25, 40, 65);")
+        self.statsLabel1.setText("Quiz taken:\n\nQuestions answered:\n\nHighest score:\n\nTop maths areas:\n\n"
+                                 "Key target:")
         self.statsLabel1.setFont(button_font)
         self.statsLabel1.setAlignment(QtCore.Qt.AlignLeft)
 
         # Stats label 2
-        self.statsLabel2 = QtWidgets.QLabel("7\n\n"
-                                            "243\n\n"
-                                            "92%\n\n"
-                                            "Number and place value\n\n"
-                                            "Fractions", win)
-        self.statsLabel2.setGeometry(450, 475, 400, 400)
+        self.statsLabel2 = QtWidgets.QLabel(win)
+        self.statsLabel2.setGeometry(475, 475, 400, 400)
         self.statsLabel2.setStyleSheet("")
         self.statsLabel2.setFont(button_font)
         self.statsLabel2.setAlignment(QtCore.Qt.AlignLeft)
 
-        # Graphs button
-        self.graphsButton = QtWidgets.QPushButton(win)
-        self.graphsButton.setGeometry(650, 400, 150, 60)
-        self.graphsButton.setFont(button_font)
-        self.graphsButton.setStyleSheet("background-color: rgb(197, 180, 227);")
-        self.graphsButton.setText("Graphs")
+        # Quiz answers button
+        self.quizAnswersButton = QtWidgets.QPushButton(win)
+        self.quizAnswersButton.setGeometry(650, 400, 150, 60)
+        self.quizAnswersButton.setFont(button_font)
+        self.quizAnswersButton.setStyleSheet("background-color: rgb(197, 180, 227);")
+        self.quizAnswersButton.setText("Past quizzes")
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(50)
-        self.graphsButton.setGraphicsEffect(shadow)
-        self.graphsButton.clicked.connect(lambda: self.show_graphs())
+        self.quizAnswersButton.setGraphicsEffect(shadow)
+        self.quizAnswersButton.clicked.connect(lambda: self.show_quiz_answers())
 
         # Quiz background shape
         self.quizBackgroundLabel = QtWidgets.QLabel(win)
@@ -289,9 +622,10 @@ class HomeScreen:
         self.yearCombo = QtWidgets.QComboBox(win)
         self.yearCombo.setGeometry(1200, 485, 370, 40)
         self.yearCombo.setFont(combo_font)
-        year_group_list = ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Year 6"]
+        year_group_list = ["All", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Year 6"]
         for item in year_group_list:
             self.yearCombo.addItem(item)
+        self.yearCombo.activated[str].connect(self.update_quiz_selections)
 
         # Year group quiz button
         self.yearQuizButton = QtWidgets.QPushButton(win)
@@ -315,6 +649,7 @@ class HomeScreen:
             self.strandCombo.addItem(item)
         self.strandCombo.activated[str].connect(self.update_substrand_combo)
         self.strandCombo.activated[str].connect(self.update_objective_combo)
+        self.strandCombo.activated[str].connect(self.update_quiz_selections)
 
         # Strand quiz button
         self.strandQuizButton = QtWidgets.QPushButton(win)
@@ -333,6 +668,7 @@ class HomeScreen:
         self.substrandCombo.setFont(combo_font)
         self.update_substrand_combo()
         self.substrandCombo.activated[str].connect(self.update_objective_combo)
+        self.substrandCombo.activated[str].connect(self.update_quiz_selections)
 
         # Sub-strand quiz button
         self.substrandQuizButton = QtWidgets.QPushButton(win)
@@ -349,9 +685,10 @@ class HomeScreen:
         self.objectiveCombo = QtWidgets.QComboBox(win)
         self.objectiveCombo.setGeometry(1200, 707, 370, 40)
         self.objectiveCombo.setFont(combo_font)
-        objective_list = ["1N1a", "1N1b", "2N1", "3N1b", "4N1", "5N1"]
+        objective_list = ["1N1", "2N1", "3N1b", "4N1", "5N1"]
         for item in objective_list:
             self.objectiveCombo.addItem(item)
+        self.objectiveCombo.activated[str].connect(self.update_quiz_selections)
 
         # Objective quiz button
         self.objectiveQuizButton = QtWidgets.QPushButton(win)
@@ -372,7 +709,7 @@ class HomeScreen:
         self.statsTitleLabel.show()
         self.statsLabel1.show()
         self.statsLabel2.show()
-        self.graphsButton.show()
+        self.quizAnswersButton.show()
         self.quizBackgroundLabel.show()
         self.quizTitleLabel.show()
         self.quizLabel.show()
@@ -393,7 +730,7 @@ class HomeScreen:
         self.statsTitleLabel.hide()
         self.statsLabel1.hide()
         self.statsLabel2.hide()
-        self.graphsButton.hide()
+        self.quizAnswersButton.hide()
         self.quizBackgroundLabel.hide()
         self.quizTitleLabel.hide()
         self.quizLabel.hide()
@@ -413,8 +750,8 @@ class HomeScreen:
         login.usernameEntry.setFocus()
         login.show_widgets()
 
-    def show_graphs(self):
-        graph_window = pg.plot()
+    def show_quiz_answers(self):
+        """graph_window = pg.plot()
         title = "Maths quiz graphs"
         graph_window.setWindowTitle(title)
         y1 = [5, 5, 7, 10, 3, 8, 9, 1, 6, 2]
@@ -423,29 +760,83 @@ class HomeScreen:
         graph_window.addItem(bar_graph)
         graph_window.setBackground('w')
         graph_window.setTitle("Quiz graphs", size="16pt")
-        graph_window.showGrid(x=False, y=True)
+        graph_window.showGrid(x=False, y=True)"""
+        model = PandasModel(data.data_frame)
+        self.view = QTableView()
+        self.view.setModel(model)
+        self.view.setWindowTitle("All quiz questions and answers for {}".format(login.username))
+        self.view.resize(1200, 600)
+        self.view.setColumnWidth(0, 100)
+        self.view.setColumnWidth(1, 100)
+        self.view.setColumnWidth(2, 570)
+        self.view.setColumnWidth(3, 150)
+        self.view.setColumnWidth(4, 150)
+        self.view.setColumnWidth(5, 100)
+        self.view.setAlternatingRowColors(True)
+        self.view.show()
 
     def start_quiz(self, quiz_type):
-        self.hide_widgets()
-        if quiz_type == "year":
-            print("Quiz selected: {}".format(self.yearCombo.currentText()))
-        elif quiz_type == "strand":
-            print("Strand quiz")
-        elif quiz_type == "sub-strand":
-            print("Sub-strand quiz")
-        elif quiz_type == "objective":
-            print("Objective quiz")
+        if quiz_type == "year" and self.year == "All":
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setWindowTitle("Incorrect quiz selection")
+            msg.setText("All objectives cannot be selected for all strands. "
+                        "Choose a year group, strand, sub-strand or objective.")
+            x = msg.exec_()
         else:
-            raise TypeError
-        quiz.show_widgets()
-        quiz.question_number = 1
-        quiz.answerEntry.setFocus()
-        quiz.ask_question("3N1")
+            self.update_quiz_selections()
+            quiz.question_list = []
+            if quiz_type == "year":
+                for objective in objectives_tuple:
+                    if objective.startswith(self.year[-1]):
+                        quiz.question_list.append(objective)
+            elif quiz_type == "strand":
+                ref = str(strand_index.get(self.strand))
+                for objective in objectives_tuple:
+                    if self.year == "All":
+                        if objective[1:2] == ref:
+                            quiz.question_list.append(objective)
+                    else:
+                        if objective[1:2] == ref and objective.startswith(self.year[-1]):
+                            quiz.question_list.append(objective)
+            elif quiz_type == "sub-strand":
+                ref = str(substrand_index.get(self.substrand))
+                for objective in objectives_tuple:
+                    if self.year == "All":
+                        if objective[1:3] == ref:
+                            quiz.question_list.append(objective)
+                    else:
+                        if objective[1:3] == ref and objective.startswith(self.year[-1]):
+                            quiz.question_list.append(objective)
+            elif quiz_type == "objective":
+                quiz.question_list = [self.objective]
+            else:
+                raise TypeError
+            self.chosen_objectives = []
+            if len(quiz.question_list) == 0:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Information)
+                msg.setWindowTitle("No objectives")
+                msg.setText("There are no objectives for your chosen selection. Please make another selection.")
+                x = msg.exec_()
+            else:
+                self.hide_widgets()
+                for objective in range(30):
+                    self.chosen_objectives.append(quiz.question_list[random.randint(0, len(quiz.question_list)-1)])
+                data.score = 0
+                quiz.question_number = 1
+                quiz.set_quiz_number()
+                quiz.quiz_number += 1
+                quiz.show_widgets()
+                quiz.scoreLabel.setText("Score: 0 out of 0")
+                quiz.questionNumberLabel.setText("Question 1 of 30")
+                quiz.answerEntry.setFocus()
+                quiz.ask_question(self.chosen_objectives[0])
 
     def update_substrand_combo(self):
         substrand_bank = {"Number and place value":
-                              ("Counting in multiples", "Read, write, order & compare", "Place value", "Rounding",
-                               "Negative numbers", "Number problems"
+                              ("Counting in multiples", "Read, write, order & compare", "Place value",
+                               "Identify, represent, estimate; rounding", "Negative numbers", "Number problems"
                                ),
                           "Calculations":
                               ("Add/subtract mentally", "Add/subtract using written methods",
@@ -494,11 +885,11 @@ class HomeScreen:
             self.substrandCombo.addItem(item)
 
     def update_objective_combo(self):
-        objective_bank = {"Counting in multiples": ("1N1a", "1N1b", "2N1", "3N1b", "4N1", "5N1"),
+        objective_bank = {"Counting in multiples": ("1N1", "2N1", "3N1", "4N1", "5N1"),
                           "Read, write, order & compare": ("1N2a", "1N2b", "1N2c", "2N2a", "2N2b", "3N2a", "3N2b",
                                                            "4N2a", "4N2b", "5N2", "6N2"),
                           "Place value": ("2N3", "3N3", "4N3a", "4N3b", "5N3a", "5N3b", "6N3"),
-                          "Rounding": ("1N4", "2N4", "3N4", "4N4a", "4N4b", "5N4", "6N4"),
+                          "Identify, represent, estimate; rounding": ("1N4", "2N4", "3N4", "4N4a", "4N4b", "5N4", "6N4"),
                           "Negative numbers": ("4N5", "5N5", "6N5"),
                           "Number problems": ("2N6", "3N6", "4N6", "5N6", "6N6"),
                           "Add/subtract mentally": ("1C1", "2C1", "3C1", "5C1"),
@@ -567,10 +958,21 @@ class HomeScreen:
         else:
             self.objectiveCombo.addItem(objective_list)
 
+    def update_quiz_selections(self):
+        self.year = self.yearCombo.currentText()
+        self.strand = self.strandCombo.currentText()
+        self.substrand = self.substrandCombo.currentText()
+        self.objective = self.objectiveCombo.currentText()
+
 
 class Quiz:
     def __init__(self):
+        self.question = ""
         self.question_number = 1
+        self.correct_answer = ""
+        self.question_list = []
+        self.question_text = ""
+        self.quiz_number = 0
 
         # Question number label
         self.questionNumberLabel = QtWidgets.QLabel("Question 1 of 30", win)
@@ -614,12 +1016,47 @@ class Quiz:
         self.quitQuizButton.setGraphicsEffect(shadow)
         self.quitQuizButton.clicked.connect(lambda: self.quit_quiz())
 
+        # Score label
+        self.scoreLabel = QtWidgets.QLabel("Score: 0 out of 0", win)
+        place_widget_centre(self.scoreLabel, 200, 60, 75)
+        self.scoreLabel.setStyleSheet("background-color: rgb(245, 245, 220);")
+        self.scoreLabel.setFont(button_font)
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(50)
+        self.scoreLabel.setGraphicsEffect(shadow)
+        self.scoreLabel.setAlignment(QtCore.Qt.AlignCenter)
+
+        # Final score label
+        self.finalScoreLabel = QtWidgets.QLabel("Score: 0 out of 0", win)
+        place_widget_centre(self.finalScoreLabel, 1200, 150, 350)
+        self.finalScoreLabel.setStyleSheet("color: rgb(255, 255, 255);")
+        self.finalScoreLabel.setFont(title_font)
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(50)
+        self.finalScoreLabel.setGraphicsEffect(shadow)
+        self.finalScoreLabel.setAlignment(QtCore.Qt.AlignCenter)
+
+        # End of quiz button
+        self.endOfQuizButton = QtWidgets.QPushButton(win)
+        place_widget_centre(self.endOfQuizButton, 150, 60, 850)
+        self.endOfQuizButton.setFont(button_font)
+        self.endOfQuizButton.setStyleSheet("background-color: rgb(169, 169, 169);")
+        self.endOfQuizButton.setText("Return home")
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(50)
+        self.endOfQuizButton.setGraphicsEffect(shadow)
+        self.endOfQuizButton.clicked.connect(lambda: self.quit_quiz())
+
+        # Image 1 label
+        self.image1Label = QtWidgets.QLabel(win)
+
     def show_widgets(self):
         self.questionNumberLabel.show()
         self.questionLabel.show()
         self.answerEntry.show()
         self.submitAnswerButton.show()
         self.quitQuizButton.show()
+        self.scoreLabel.show()
 
     def hide_widgets(self):
         self.questionNumberLabel.hide()
@@ -627,142 +1064,117 @@ class Quiz:
         self.answerEntry.hide()
         self.submitAnswerButton.hide()
         self.quitQuizButton.hide()
+        self.scoreLabel.hide()
+        self.finalScoreLabel.hide()
+        self.endOfQuizButton.hide()
 
     def ask_question(self, objective):
-        question = Question(objective)
-        question_text = question.question_text()
-        self.questionLabel.setText(question_text)
+        place_widget_centre(self.questionLabel, 1200, 150, 350)
+        self.question = Qu(objective)
+        self.correct_answer = self.question.correct_answer()
+        self.question_text = self.question.question_text()
+        try:
+            pixmap = QtGui.QPixmap(self.question.question.image_1_ref)
+            self.image1Label.setPixmap(pixmap)
+            place_widget_centre(self.image1Label, self.question.question.image_1_width,
+                                self.question.question.image_1_height, self.question.question.image_1_y)
+            self.image1Label.setScaledContents(True)
+            self.image1Label.show()
+            place_widget_centre(self.questionLabel, 1200, 150, self.question.question.question_label_y)
+        except:
+            pass
+        self.questionLabel.setText(self.question_text)
 
     def submit_answer(self):
-        user_answer = self.answerEntry.text()
+        self.check_answer()
         self.answerEntry.setText("")
         self.question_number += 1
         self.questionNumberLabel.setText("Question {} of 30".format(self.question_number))
+        self.update_score_label()
         self.answerEntry.setFocus()
-        print("Your answer is {}".format(user_answer))
         if self.question_number > 30:
-            self.questionLabel.setText("End of quiz")
+            self.end_quiz()
         else:
-            self.ask_question("3N1")
+            self.image1Label.hide()
+            self.ask_question(home_screen.chosen_objectives[self.question_number - 1])
+
+    def check_answer(self):
+        user_answer = self.answerEntry.text()
+        if user_answer == self.correct_answer:
+            data.score += 1
+            self.update_database(user_answer, 1)
+        else:
+            self.update_database(user_answer, 0)
+
+    def update_database(self, user_answer, marks):
+        connection = sqlite3.connect("{}.db".format(login.username))
+        cursor = connection.cursor()
+        cursor.execute("""INSERT INTO QUIZ
+                                          ('Quiz number', Username, Objective, Question, 'Correct answer',
+                                          'User answer', Marks) VALUES  (?, ?, ?, ?, ?, ?, ?)""",
+                       (quiz.quiz_number, login.username, home_screen.chosen_objectives[self.question_number - 1],
+                        self.question_text, self.correct_answer, user_answer, marks)
+                       )
+        connection.commit()
+        cursor.close()
+
+    def update_score_label(self):
+        self.scoreLabel.setText("Score: {} out of {}".format(data.score, self.question_number - 1))
+
+    def end_quiz(self):
+        read_data(login.username)
+        data.set_stats()
+        quiz.hide_widgets()
+        self.finalScoreLabel.show()
+        self.finalScoreLabel.setText("Final score: {} out of {}".format(data.score, self.question_number - 1))
+        self.endOfQuizButton.show()
 
     def quit_quiz(self):
+        read_data(login.username)
+        data.set_stats()
         self.hide_widgets()
+        self.image1Label.hide()
         home_screen.show_widgets()
+        
+    def set_quiz_number(self):
+        connection = sqlite3.connect("{}.db".format(login.username))
+        query = pd.read_sql_query("SELECT * FROM QUIZ", connection)
+        print(query['Quiz number'].max())
+        try:
+            quiz.quiz_number = int((query['Quiz number'].max()))
+        except:
+            pass
+        connection.close()
 
 
-class Question:
-    def __init__(self, objective):
-        # Initiates relevant question object and determines the question and correct answer
-        if objective == "1N1":
-            self.question = Objective1N1()
-        elif objective == "2N1":
-            self.question = Objective2N1()
-        elif objective == "3N1":
-            self.question = Objective3N1()
-        # All answers are converted to strings to allow for both numeric and written answers
-        self.correct_answer = str(self.question.correct_answer).lower()
+class PandasModel(QAbstractTableModel):
 
-    def question_text(self):
-        return self.question.question_text
+    def __init__(self, data_frame):
+        QAbstractTableModel.__init__(self)
+        self._data = data_frame
 
-    #def check_answer(self):
-        #if self.user_answer == self.correct_answer:
-        #    print("Correct! The answer is {}.\n".format(self.correct_answer))
-        #else:
-        #    print("Incorrect. Your answer was {}. The correct answer is {}.\n".
-        #          format(self.user_answer, self.correct_answer))
+    def rowCount(self, parent=None):
+        return self._data.shape[0]
 
+    def columnCount(self, parent=None):
+        return self._data.shape[1]
 
-def question_text_objective_n1(direction, highest_value, multiple):
-    if direction:
-        return "What is the next number in the sequence?\n\n{}, {}, {}... ". \
-            format(highest_value, highest_value - multiple, highest_value - 2 * multiple)
-    else:
-        return "What is the next number in the sequence?\n\n{}, {}, {}... ". \
-            format(highest_value - 2 * multiple, highest_value - multiple, highest_value)
+    def data(self, index, role):
+        if role == Qt.DisplayRole:
+            return str(self._data.iloc[index.row(), index.column()])
+        if role == Qt.TextAlignmentRole and index.column() in (0, 3, 4, 5):
+            return Qt.AlignVCenter + Qt.AlignRight
+        if role == Qt.BackgroundRole and index.column() not in (0, 1):
+            value = str(self._data.iloc[index.row(), 5])
+            if value == "0":
+                return QtGui.QColor(255, 153, 204)
+            elif value == "1":
+                return QtGui.QColor(153, 255, 204)
 
-
-class BasicN1:
-    def __init__(self, year_group, multiples):
-        self.year_group = year_group
-        self.multiples = multiples
-        self.direction = random_boolean()
-        self.multiple = self.multiple()
-        self.highest_value = self.highest_value()
-        self.correct_answer = self.correct_answer()
-        self.question_text = self.question_text()
-
-    def multiple(self):
-        return self.multiples[random.randint(0, len(self.multiples) - 1)]
-
-    def highest_value(self):
-        multiplier = random.randint(3, 10)
-        return self.multiple * multiplier
-
-    def correct_answer(self):
-        if self.direction:
-            return self.highest_value - 3 * self.multiple
-        else:
-            return self.highest_value + self.multiple
-
-    def question_text(self):
-        return question_text_objective_n1(self.direction, self.highest_value, self.multiple)
-
-
-class Objective1N1:
-    def __init__(self):
-        basic = BasicN1(1, (2, 5, 10))
-        self.direction = basic.direction
-        self.multiple = basic.multiple
-        self.highest_value = basic.highest_value
-        self.correct_answer = basic.correct_answer
-        self.question_text = basic.question_text
-
-
-class Objective2N1:
-    def __init__(self):
-        self.question_type = random_boolean()
-        self.direction = random_boolean()
-        self.multiples = (2, 3, 5)
-        self.multiple = self.multiple()
-        self.highest_value = self.highest_value()
-        self.correct_answer = self.correct_answer()
-        self.question_text = self.question_text()
-
-    def multiple(self):
-        if self.question_type:
-            return self.multiples[random.randint(0, len(self.multiples) - 1)]
-        else:
-            return 10
-
-    def highest_value(self):
-        if self.question_type:
-            return random.randrange(self.multiple * 3, self.multiple * 12, self.multiple)
-        else:
-            highest_value = random.randint(31, 99)
-            while highest_value % 10 == 0:
-                highest_value = random.randint(31, 99)
-            return highest_value
-
-    def correct_answer(self):
-        if self.direction:
-            return self.highest_value - 3 * self.multiple
-        else:
-            return self.highest_value + self.multiple
-
-    def question_text(self):
-        return question_text_objective_n1(self.direction, self.highest_value, self.multiple)
-
-
-class Objective3N1:
-    def __init__(self):
-        basic = BasicN1(3, (4, 8, 50, 100))
-        self.correct_answer = basic.correct_answer
-        self.question_text = basic.question_text
-
-
-def random_boolean():
-    return random.randint(0, 1)
+    def headerData(self, col, orientation, role):
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return self._data.columns[col]
+        return None
 
 
 def place_widget_centre(widget, width, height, y):
@@ -776,8 +1188,11 @@ if __name__ == '__main__':
     screen_size = screen.size()
     win = MyWindow()
     win.show()
+    data = Data()
+    load_usernames_passwords()
     login = LoginScreen()
     login.show_widgets()
+    new_user = NewUserScreen()
     home_screen = HomeScreen()
     quiz = Quiz()
 

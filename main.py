@@ -4,15 +4,20 @@ from PyQt5.QtCore import QAbstractTableModel, Qt
 from questionbank import Question as Qu
 import sys
 import os
-import pyqtgraph as pg
 import random
 import sqlite3
 import pandas as pd
-
+import numpy as np
+import matplotlib.pyplot as plt
 
 button_font = QtGui.QFont()
 button_font.setFamily("Segoe UI")
 button_font.setPointSize(14)
+
+bold_button_font = QtGui.QFont()
+bold_button_font.setFamily("Segoe UI")
+bold_button_font.setPointSize(14)
+bold_button_font.setBold(True)
 
 button_font_small = QtGui.QFont()
 button_font_small.setFamily("Segoe UI")
@@ -47,6 +52,11 @@ question_font = QtGui.QFont()
 question_font.setFamily("Segoe UI")
 question_font.setPointSize(18)
 
+large_font = QtGui.QFont()
+large_font.setFamily("Segoe UI")
+large_font.setPointSize(42)
+
+
 objectives_tuple = ("1N1", "2N1", "3N1", "4N1", "5N1", "1N2a", "1N2b", "1N2c", "2N2a", "2N2b", "3N2a", "3N2b", "4N2a",
                     "4N2b", "5N2", "6N2", "2N3", "3N3", "4N3a", "4N3b", "5N3a", "5N3b", "6N3", "1N4", "2N4", "3N4",
                     "4N4a", "4N4b", "5N4", "6N4", "4N5", "5N5", "6N5", "2N6", "3N6", "4N6", "5N6", "6N6", "1C1", "2C1",
@@ -69,7 +79,7 @@ objectives_tuple = ("1N1", "2N1", "3N1", "4N1", "5N1", "1N2a", "1N2b", "1N2c", "
                     "5S1", "6S1", "2S2a", "2S2b", "3S2", "4S2", "5S2", "6S3")
 
 strand_index = {
-    "Number and place value": "N", "Calculations": "C", "Fractions, decimals and percentages": "F",
+    "Number and place value": "N", "Calculations": "C", "Fractions, decimals & percentages": "F",
     "Ratio and proportion": "R", "Algebra": "A", "Measurement": "M", "Shape": "G",
     "Position and direction": "P", "Statistics": "S"
 }
@@ -194,7 +204,7 @@ class Data:
             if total == 0:
                 pass
             elif marks == 0:
-                quiz_dictionary = 0
+                quiz_dictionary[value] = 0
             else:
                 quiz_dictionary[value] = round(100 * (marks / total))
 
@@ -282,6 +292,14 @@ class LoginScreen:
         self.mathsOwlLabel.setGeometry(200, 250, 400, 400)
         self.mathsOwlLabel.setScaledContents(True)
 
+        # Gif label
+        self.gifLabel = QtWidgets.QLabel(win)
+        self.gifLabel.setGeometry(1325, 300, 500, 300)
+        self.gifLabel.setScaledContents(True)
+        self.movie = QtGui.QMovie("C:/Users/Michael/Pictures/Saved Pictures/maths_thinking.gif")
+        self.gifLabel.setMovie(self.movie)
+        self.movie.start()
+
         # Welcome label
         self.welcomeLabel = QtWidgets.QLabel("Welcome!", win)
         place_widget_centre(self.welcomeLabel, 350, 60, 190)
@@ -357,23 +375,16 @@ class LoginScreen:
         new_user.newUsernameEntry.setFocus()
 
     def show_widgets(self):
-        self.loginBackgroundLabel.show()
-        self.mathsOwlLabel.show()
-        self.welcomeLabel.show()
-        self.usernameEntry.show()
-        self.passwordEntry.show()
-        self.loginButton.show()
-        self.newUserButton.show()
+        widgets = (self.loginBackgroundLabel, self.mathsOwlLabel, self.gifLabel, self.welcomeLabel, self.usernameEntry,
+                   self.passwordEntry, self.loginButton, self.newUserButton)
+        for widget in widgets:
+            widget.show()
 
     def hide_widgets(self):
-        self.loginBackgroundLabel.hide()
-        self.mathsOwlLabel.hide()
-        self.welcomeLabel.hide()
-        self.usernameEntry.hide()
-        self.passwordEntry.hide()
-        self.loginButton.hide()
-        self.loginErrorLabel.hide()
-        self.newUserButton.hide()
+        widgets = (self.loginBackgroundLabel, self.mathsOwlLabel, self.gifLabel, self.welcomeLabel, self.usernameEntry,
+                   self.passwordEntry, self.loginButton, self.loginErrorLabel, self.newUserButton)
+        for widget in widgets:
+            widget.hide()
 
 
 class NewUserScreen:
@@ -436,23 +447,17 @@ class NewUserScreen:
         self.createNewUserButton.clicked.connect(self.create_new_user)
 
     def show_widgets(self):
-        self.newUserTitleLabel.show()
-        login.loginBackgroundLabel.show()
-        self.returnToLoginButton.show()
-        self.newUsernameEntry.show()
-        self.newPasswordEntry.show()
-        self.createNewUserButton.show()
-        self.newUserClassEntry.show()
+        widgets = (self.newUserTitleLabel, login.loginBackgroundLabel, login.mathsOwlLabel, self.returnToLoginButton,
+                   self.newUsernameEntry, self.newPasswordEntry, self.createNewUserButton, self.newUserClassEntry)
+        for widget in widgets:
+            widget.show()
 
     def hide_widgets(self):
-        self.newUserTitleLabel.hide()
-        login.loginBackgroundLabel.hide()
-        self.returnToLoginButton.hide()
-        self.newUsernameEntry.hide()
-        self.newPasswordEntry.hide()
-        self.createNewUserButton.hide()
-        self.newUserClassEntry.hide()
-        self.newUserErrorLabel.hide()
+        widgets = (self.newUserTitleLabel, login.loginBackgroundLabel, login.mathsOwlLabel, self.returnToLoginButton,
+                   self.newUsernameEntry, self.newPasswordEntry, self.createNewUserButton, self.newUserClassEntry,
+                   self.newUserErrorLabel)
+        for widget in widgets:
+            widget.hide()
 
     def create_new_user(self):
         if self.username_exists():
@@ -521,10 +526,10 @@ class NewUserScreen:
 
 class HomeScreen:
     def __init__(self):
-        self.year = ""
-        self.strand = ""
-        self.substrand = ""
-        self.objective = ""
+        self.year = "All"
+        self.strand = "Number and place value"
+        self.substrand = "Counting in multiples"
+        self.objective = "1N1"
         self.chosen_objectives = []
 
         # Username label
@@ -549,6 +554,16 @@ class HomeScreen:
         self.userIconLabel.setPixmap(self.pixmap)
         self.userIconLabel.setGeometry(200, 50, 200, 200)
         self.userIconLabel.setScaledContents(True)
+
+        # Maths owl image
+        self.mathsOwlLabel = QtWidgets.QLabel(win)
+        self.pixmap = QtGui.QPixmap("C:/Users/Michael/Pictures/Saved Pictures/maths_owl_2.png")
+        self.mathsOwlLabel.setPixmap(self.pixmap)
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(10)
+        self.mathsOwlLabel.setGraphicsEffect(shadow)
+        self.mathsOwlLabel.setGeometry(1550, 50, 200, 200)
+        self.mathsOwlLabel.setScaledContents(True)
 
         # Stats background shape
         self.statsBackgroundLabel = QtWidgets.QLabel(win)
@@ -577,7 +592,7 @@ class HomeScreen:
 
         # Stats label 2
         self.statsLabel2 = QtWidgets.QLabel(win)
-        self.statsLabel2.setGeometry(475, 475, 400, 400)
+        self.statsLabel2.setGeometry(455, 475, 400, 400)
         self.statsLabel2.setStyleSheet("")
         self.statsLabel2.setFont(button_font)
         self.statsLabel2.setAlignment(QtCore.Qt.AlignLeft)
@@ -593,6 +608,17 @@ class HomeScreen:
         self.quizAnswersButton.setGraphicsEffect(shadow)
         self.quizAnswersButton.clicked.connect(lambda: self.show_quiz_answers())
 
+        # Show graphs button
+        self.graphsPageButton = QtWidgets.QPushButton(win)
+        self.graphsPageButton.setGeometry(650, 500, 150, 60)
+        self.graphsPageButton.setFont(button_font)
+        self.graphsPageButton.setStyleSheet("background-color: rgb(197, 180, 227);")
+        self.graphsPageButton.setText("Show graphs")
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(50)
+        self.graphsPageButton.setGraphicsEffect(shadow)
+        self.graphsPageButton.clicked.connect(lambda: self.graphs_page())
+
         # Quiz background shape
         self.quizBackgroundLabel = QtWidgets.QLabel(win)
         self.quizBackgroundLabel.setGeometry(1000, 375, 775, 425)
@@ -602,20 +628,19 @@ class HomeScreen:
         self.quizBackgroundLabel.setGraphicsEffect(shadow)
 
         # Quiz title label
-        self.quizTitleLabel = QtWidgets.QLabel("Take quiz", win)
+        self.quizTitleLabel = QtWidgets.QLabel(win)
         self.quizTitleLabel.setGeometry(1050, 400, 400, 65)
         self.quizTitleLabel.setStyleSheet("text-decoration: underline;")
         self.quizTitleLabel.setFont(sub_title_font)
+        self.quizTitleLabel.setText("Take quiz")
         self.quizTitleLabel.setAlignment(QtCore.Qt.AlignLeft)
 
         # Quiz label
-        self.quizLabel = QtWidgets.QLabel("Year group\n\n"
-                                          "Strand\n\n"
-                                          "Sub-strand\n\n"
-                                          "Objective", win)
+        self.quizLabel = QtWidgets.QLabel(win)
         self.quizLabel.setGeometry(1050, 485, 250, 450)
         self.quizLabel.setStyleSheet("color: rgb(25, 40, 65);")
         self.quizLabel.setFont(test_font)
+        self.quizLabel.setText("Year group\n\nStrand\n\nSub-strand\n\nObjective")
         self.quizLabel.setAlignment(QtCore.Qt.AlignLeft)
 
         # Year combo
@@ -642,7 +667,7 @@ class HomeScreen:
         self.strandCombo = QtWidgets.QComboBox(win)
         self.strandCombo.setGeometry(1200, 559, 370, 40)
         self.strandCombo.setFont(combo_font)
-        strand_list = ("Number and place value", "Calculations", "Fractions, decimals and percentages",
+        strand_list = ("Number and place value", "Calculations", "Fractions, decimals & percentages",
                        "Ratio and proportion", "Algebra", "Measurement", "Shape", "Position and direction",
                        "Statistics")
         for item in strand_list:
@@ -702,46 +727,26 @@ class HomeScreen:
         self.objectiveQuizButton.clicked.connect(lambda: self.start_quiz("objective"))
 
     def show_widgets(self):
-        self.usernameLabel.show()
-        self.changeUserButton.show()
-        self.userIconLabel.show()
-        self.statsBackgroundLabel.show()
-        self.statsTitleLabel.show()
-        self.statsLabel1.show()
-        self.statsLabel2.show()
-        self.quizAnswersButton.show()
-        self.quizBackgroundLabel.show()
-        self.quizTitleLabel.show()
-        self.quizLabel.show()
-        self.yearCombo.show()
-        self.strandCombo.show()
-        self.substrandCombo.show()
-        self.objectiveCombo.show()
-        self.yearQuizButton.show()
-        self.strandQuizButton.show()
-        self.substrandQuizButton.show()
-        self.objectiveQuizButton.show()
+        widgets = (self.usernameLabel, self.changeUserButton, self.userIconLabel, self.mathsOwlLabel,
+                   self.statsBackgroundLabel, self.statsTitleLabel, self.statsLabel1, self.statsLabel2,
+                   self.quizAnswersButton, self.quizBackgroundLabel, self.quizTitleLabel, self.quizLabel,
+                   self.yearCombo, self.strandCombo, self.substrandCombo, self.objectiveCombo, self.yearQuizButton,
+                   self.graphsPageButton, self.strandQuizButton, self.substrandQuizButton, self.objectiveQuizButton)
+        for widget in widgets:
+            widget.show()
+        self.yearCombo.setGeometry(1200, 485, 370, 40)
+        self.strandCombo.setGeometry(1200, 559, 370, 40)
+        self.substrandCombo.setGeometry(1200, 633, 370, 40)
+        self.objectiveCombo.setGeometry(1200, 707, 370, 40)
 
     def hide_widgets(self):
-        self.usernameLabel.hide()
-        self.changeUserButton.hide()
-        self.userIconLabel.hide()
-        self.statsBackgroundLabel.hide()
-        self.statsTitleLabel.hide()
-        self.statsLabel1.hide()
-        self.statsLabel2.hide()
-        self.quizAnswersButton.hide()
-        self.quizBackgroundLabel.hide()
-        self.quizTitleLabel.hide()
-        self.quizLabel.hide()
-        self.yearCombo.hide()
-        self.strandCombo.hide()
-        self.substrandCombo.hide()
-        self.objectiveCombo.hide()
-        self.yearQuizButton.hide()
-        self.strandQuizButton.hide()
-        self.substrandQuizButton.hide()
-        self.objectiveQuizButton.hide()
+        widgets = (self.usernameLabel, self.changeUserButton, self.userIconLabel, self.mathsOwlLabel,
+                   self.statsBackgroundLabel, self.statsTitleLabel, self.statsLabel1, self.statsLabel2,
+                   self.quizAnswersButton, self.quizBackgroundLabel, self.quizTitleLabel, self.quizLabel,
+                   self.yearCombo, self.strandCombo, self.substrandCombo, self.objectiveCombo, self.yearQuizButton,
+                   self.graphsPageButton, self.strandQuizButton, self.substrandQuizButton, self.objectiveQuizButton)
+        for widget in widgets:
+            widget.hide()
 
     def change_user(self):
         self.hide_widgets()
@@ -751,16 +756,6 @@ class HomeScreen:
         login.show_widgets()
 
     def show_quiz_answers(self):
-        """graph_window = pg.plot()
-        title = "Maths quiz graphs"
-        graph_window.setWindowTitle(title)
-        y1 = [5, 5, 7, 10, 3, 8, 9, 1, 6, 2]
-        x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        bar_graph = pg.BarGraphItem(x=x, height=y1, width=0.6, brush='g')
-        graph_window.addItem(bar_graph)
-        graph_window.setBackground('w')
-        graph_window.setTitle("Quiz graphs", size="16pt")
-        graph_window.showGrid(x=False, y=True)"""
         model = PandasModel(data.data_frame)
         self.view = QTableView()
         self.view.setModel(model)
@@ -774,6 +769,14 @@ class HomeScreen:
         self.view.setColumnWidth(5, 100)
         self.view.setAlternatingRowColors(True)
         self.view.show()
+
+    def graphs_page(self):
+        self.hide_widgets()
+        graph.show_widgets()
+        home_screen.year = "All"
+        home_screen.strand = "Number and place value"
+        home_screen.substrand = "Counting in multiples"
+        home_screen.objective = "1N1"
 
     def start_quiz(self, quiz_type):
         if quiz_type == "year" and self.year == "All":
@@ -844,7 +847,7 @@ class HomeScreen:
                                "Multiply/divide mentally", "Multiply/divide using written methods",
                                "Solve problems using all 4 operations", "Order of operations"
                                ),
-                          "Fractions, decimals and percentages":
+                          "Fractions, decimals & percentages":
                               ("Recognise & count fractions", "Equivalent fractions", "Comparing & ordering fractions",
                                "Add/subtract fractions", "Multiply/divide fractions", "Fractions/decimals equivalence",
                                "Rounding decimals", "Compare & order decimals","Multiply/divide decimals",
@@ -965,6 +968,245 @@ class HomeScreen:
         self.objective = self.objectiveCombo.currentText()
 
 
+class Graphs:
+    def __init__(self):
+        # Select quiz background shape
+        self.selectQuizBackgroundLabel = QtWidgets.QLabel(win)
+        self.selectQuizBackgroundLabel.setGeometry(70, 150, 450, 550)
+        self.selectQuizBackgroundLabel.setStyleSheet("background-color: rgb(170, 170, 255);")
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(10)
+        self.selectQuizBackgroundLabel.setGraphicsEffect(shadow)
+
+        # Graph background
+        self.graphBackgroundLabel = QtWidgets.QLabel(win)
+        self.graphBackgroundLabel.setStyleSheet("background-color: rgb(197, 180, 227);")
+        self.graphBackgroundLabel.setText("Graph will appear here")
+        self.graphBackgroundLabel.setFont(large_font)
+        self.graphBackgroundLabel.setAlignment(QtCore.Qt.AlignCenter)
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(10)
+        self.graphBackgroundLabel.setGraphicsEffect(shadow)
+        self.graphBackgroundLabel.setGeometry(600, 75, 1250, 685)
+        self.graphBackgroundLabel.setScaledContents(True)
+
+        # Graph title label
+        self.graphTitleLabel = QtWidgets.QLabel(win)
+        self.graphTitleLabel.setGeometry(120, 175, 400, 65)
+        self.graphTitleLabel.setStyleSheet("text-decoration: underline;")
+        self.graphTitleLabel.setFont(sub_title_font)
+        self.graphTitleLabel.setText("Graphs")
+        self.graphTitleLabel.setAlignment(QtCore.Qt.AlignLeft)
+
+        # Year group label
+        self.yearGroupLabel = self.heading_label(120, 250, "Choose year group")
+
+        # Strand label
+        self.strandLabel = self.heading_label(120, 400, "Choose strand")
+
+        # Sub-strand label
+        self.substrandLabel = self.heading_label(120, 550, "Choose sub-strand")
+
+        # Show strand graph button
+        self.showGraphButton = QtWidgets.QPushButton(win)
+        self.showGraphButton.setGeometry(350, 245, 120, 40)
+        self.showGraphButton.setFont(button_font_small)
+        self.showGraphButton.setStyleSheet("background-color: rgb(197, 180, 227);")
+        self.showGraphButton.setText("Strand")
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(50)
+        self.showGraphButton.setGraphicsEffect(shadow)
+        self.showGraphButton.clicked.connect(lambda: self.set_graph_strand())
+
+        # Show sub-strand graph button
+        self.showGraphButton2 = QtWidgets.QPushButton(win)
+        self.showGraphButton2.setGeometry(350, 395, 120, 40)
+        self.showGraphButton2.setFont(button_font_small)
+        self.showGraphButton2.setStyleSheet("background-color: rgb(197, 180, 227);")
+        self.showGraphButton2.setText("Sub-strand")
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(50)
+        self.showGraphButton2.setGraphicsEffect(shadow)
+        self.showGraphButton2.clicked.connect(lambda: self.set_graph_substrand())
+
+        # Return to home screen button
+        self.graphToHomeButton = QtWidgets.QPushButton(win)
+        place_widget_centre(self.graphToHomeButton, 150, 60, 850)
+        self.graphToHomeButton.setFont(button_font)
+        self.graphToHomeButton.setStyleSheet("background-color: rgb(169, 169, 169);")
+        self.graphToHomeButton.setText("Return home")
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(50)
+        self.graphToHomeButton.setGraphicsEffect(shadow)
+        self.graphToHomeButton.clicked.connect(lambda: self.return_to_home())
+
+    def heading_label(self, x, y, text=""):
+        label = QtWidgets.QLabel(win)
+        label.setGeometry(x, y, 250, 400)
+        label.setStyleSheet("color: rgb(25, 40, 65);")
+        label.setText(text)
+        label.setFont(bold_button_font)
+        label.setAlignment(QtCore.Qt.AlignLeft)
+        return label
+
+    def show_graph(self, categories, marks, x_label="Strand", y_label="% correct", title="QLA by maths strand"):
+        # Put data in long format in a dataframe.
+        if plt:
+            plt.close()
+        x_axis = np.arange(len(categories))
+        plt.figure(num="Only losers don't code")
+        colours = []
+        for value in marks:
+            if value < 50:
+                colours.append("r")
+            elif value > 70:
+                colours.append("g")
+            else:
+                colours.append("gray")
+        plt.bar(x_axis, marks, color=colours)
+        plt.ylim((0, 100))
+        plt.xticks(x_axis, categories, rotation=45, ha="right")
+        plt.subplots_adjust(bottom=0.4)
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+        for x, y in zip(x_axis, marks):
+            if marks[x] > 90:
+                position = -20
+                colour = "w"
+            else:
+                position = 10
+                colour = "k"
+            plt.annotate(marks[x],  # this is the text
+                         (x, y),  # this is the point to label
+                         textcoords="offset points",  # how to position the text
+                         xytext=(0, position),  # distance from text to points (x,y)
+                         ha='center',
+                         color=colour)  # horizontal alignment can be left, right or center
+        plt.title(title, y=1.05)
+        plt.get_current_fig_manager().window.setGeometry(600, 150, 1250, 650)
+        plt.show()
+
+    def show_widgets(self):
+        home_screen.yearCombo.setGeometry(110, 300, 370, 40)
+        home_screen.strandCombo.setGeometry(110, 450, 370, 40)
+        home_screen.substrandCombo.setGeometry(110, 600, 370, 40)
+        combos = (home_screen.yearCombo, home_screen.strandCombo, home_screen.substrandCombo)
+        for widget in combos:
+            widget.raise_()
+        widgets = (self.graphTitleLabel, self.selectQuizBackgroundLabel, self.graphBackgroundLabel, self.yearGroupLabel,
+                   self.strandLabel, self.substrandLabel, home_screen.yearCombo, home_screen.strandCombo,
+                   home_screen.substrandCombo, self.showGraphButton, self.showGraphButton2, self.graphToHomeButton)
+        for widget in widgets:
+            widget.show()
+
+    def hide_widgets(self):
+        widgets = (self.graphTitleLabel, self.selectQuizBackgroundLabel, self.graphBackgroundLabel, self.yearGroupLabel,
+                   self.strandLabel, self.substrandLabel, home_screen.yearCombo, home_screen.strandCombo,
+                   home_screen.substrandCombo, self.showGraphButton, self.showGraphButton2, self.graphToHomeButton)
+        for widget in widgets:
+            widget.hide()
+
+    def return_to_home(self):
+        self.hide_widgets()
+        if plt:
+            plt.close()
+        home_screen.show_widgets()
+
+    def set_graph_strand(self):
+        connection = sqlite3.connect("{}.db".format(login.username))
+        data_frame = pd.read_sql_query("SELECT * FROM QUIZ", connection)
+        objectives = []
+        averages = []
+        if home_screen.year == "All":
+            year_label = "All year groups"
+            year_selected = ("1", "2", "3", "4", "5", "6")
+        else:
+            year_label = home_screen.year
+            year_selected = home_screen.year[-1]
+        for key in strand_index:
+            value = strand_index[key]
+            marks = 0
+            total = 0
+            for row in data_frame.itertuples():
+                if (row[4][1]) == value and row[4][0] in year_selected:
+                    marks += int(row[8])
+                    total += 1
+            if total == 0:
+                pass
+            elif marks == 0:
+                objectives.append(value)
+                averages.append(0)
+            else:
+                objectives.append(value)
+                averages.append(round(100 * (marks / total)))
+        connection.close()
+        full_objectives = []
+        switch = {}
+        for key in strand_index:
+            switch[strand_index[key]] = key
+        for objective in objectives:
+            full_objectives.append(switch[objective])
+        if (len(full_objectives)) == 0:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setWindowTitle("No data")
+            msg.setText("There is no data for your chosen selections. Please make a different selection.")
+            x = msg.exec_()
+        else:
+            self.show_graph(full_objectives, averages, x_label="Strand", y_label="% correct",
+                            title="{} QLA by maths strand".format(year_label))
+
+    def set_graph_substrand(self):
+        connection = sqlite3.connect("{}.db".format(login.username))
+        data_frame = pd.read_sql_query("SELECT * FROM QUIZ", connection)
+        objectives = []
+        averages = []
+        if home_screen.year == "All":
+            year_label = "All year groups"
+            year_selected = ("1", "2", "3", "4", "5", "6")
+        else:
+            year_label = home_screen.year
+            year_selected = home_screen.year[-1]
+        strand_selected = strand_index[home_screen.strand]
+        for key in substrand_index:
+            value = substrand_index[key]
+            marks = 0
+            total = 0
+            for row in data_frame.itertuples():
+                if (row[4][1:4]) in ("F10", "F11", "F12"):
+                    if (row[4][1:4]) == value[:3] and row[4][0] in year_selected and row[4][1] == strand_selected:
+                        marks += int(row[8])
+                        total += 1
+                else:
+                    if (row[4][1:3]) == value[:2] and row[4][0] in year_selected and row[4][1] == strand_selected:
+                        marks += int(row[8])
+                        total += 1
+            if total == 0:
+                pass
+            elif marks == 0:
+                objectives.append(value)
+                averages.append(0)
+            else:
+                objectives.append(value)
+                averages.append(round(100 * (marks / total)))
+        connection.close()
+        switch = {}
+        for key in substrand_index:
+            switch[substrand_index[key]] = key
+        full_objectives = []
+        for objective in objectives:
+            full_objectives.append(switch[objective])
+        if (len(full_objectives)) == 0:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setWindowTitle("No data")
+            msg.setText("There is no data for your chosen selections. Please make a different selection.")
+            x = msg.exec_()
+        else:
+            self.show_graph(full_objectives, averages, x_label="Sub-strand", y_label="% correct",
+                            title="{} QLA by sub-strand for {}".format(year_label, home_screen.strand))
+
+
 class Quiz:
     def __init__(self):
         self.question = ""
@@ -1026,6 +1268,14 @@ class Quiz:
         self.scoreLabel.setGraphicsEffect(shadow)
         self.scoreLabel.setAlignment(QtCore.Qt.AlignCenter)
 
+        # Correct gif
+        self.correctGif = QtWidgets.QLabel(win)
+        self.correctGif.setGeometry(150, 300, 500, 300)
+        self.correctGif.setScaledContents(True)
+        self.movie = QtGui.QMovie("C:/Users/Michael/Pictures/Saved Pictures/correct.gif")
+        self.correctGif.setMovie(self.movie)
+        self.movie.start()
+
         # Final score label
         self.finalScoreLabel = QtWidgets.QLabel("Score: 0 out of 0", win)
         place_widget_centre(self.finalScoreLabel, 1200, 150, 350)
@@ -1051,22 +1301,16 @@ class Quiz:
         self.image1Label = QtWidgets.QLabel(win)
 
     def show_widgets(self):
-        self.questionNumberLabel.show()
-        self.questionLabel.show()
-        self.answerEntry.show()
-        self.submitAnswerButton.show()
-        self.quitQuizButton.show()
-        self.scoreLabel.show()
+        widgets = (self.questionNumberLabel, self.questionLabel, self.answerEntry, self.submitAnswerButton,
+                   self.quitQuizButton, self.scoreLabel)
+        for widget in widgets:
+            widget.show()
 
     def hide_widgets(self):
-        self.questionNumberLabel.hide()
-        self.questionLabel.hide()
-        self.answerEntry.hide()
-        self.submitAnswerButton.hide()
-        self.quitQuizButton.hide()
-        self.scoreLabel.hide()
-        self.finalScoreLabel.hide()
-        self.endOfQuizButton.hide()
+        widgets = (self.questionNumberLabel, self.questionLabel, self.answerEntry, self.submitAnswerButton,
+                   self.quitQuizButton, self.scoreLabel, self.finalScoreLabel, self.endOfQuizButton)
+        for widget in widgets:
+            widget.hide()
 
     def ask_question(self, objective):
         place_widget_centre(self.questionLabel, 1200, 150, 350)
@@ -1103,8 +1347,25 @@ class Quiz:
         if user_answer == self.correct_answer:
             data.score += 1
             self.update_database(user_answer, 1)
+            self.correct_gif()
         else:
             self.update_database(user_answer, 0)
+            self.incorrect_gif()
+
+    def correct_gif(self):
+        self.correctGif.show()
+        QtCore.QTimer.singleShot(1000, self.correctGif.hide)
+
+    def incorrect_gif(self):
+        # Incorrect gif
+        self.incorrectGif = QtWidgets.QLabel(win)
+        self.incorrectGif.setGeometry(1325, 300, 450, 300)
+        self.incorrectGif.setScaledContents(True)
+        self.movie2 = QtGui.QMovie("C:/Users/Michael/Pictures/Saved Pictures/incorrect.gif")
+        self.incorrectGif.setMovie(self.movie2)
+        self.movie2.start()
+        self.incorrectGif.show()
+        QtCore.QTimer.singleShot(1250, self.incorrectGif.hide)
 
     def update_database(self, user_answer, marks):
         connection = sqlite3.connect("{}.db".format(login.username))
@@ -1139,7 +1400,6 @@ class Quiz:
     def set_quiz_number(self):
         connection = sqlite3.connect("{}.db".format(login.username))
         query = pd.read_sql_query("SELECT * FROM QUIZ", connection)
-        print(query['Quiz number'].max())
         try:
             quiz.quiz_number = int((query['Quiz number'].max()))
         except:
@@ -1194,6 +1454,7 @@ if __name__ == '__main__':
     login.show_widgets()
     new_user = NewUserScreen()
     home_screen = HomeScreen()
+    graph = Graphs()
     quiz = Quiz()
 
     sys.exit(app.exec_())

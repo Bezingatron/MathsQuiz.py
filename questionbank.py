@@ -515,3 +515,9 @@ class Question:
 
     def question_text(self):
         return self.question.question_text
+
+    def multi_plot(self):
+        return self.question.multi_plot
+
+    def place_text(self):
+        return self.question.place_text

@@ -56,6 +56,8 @@ large_font = QtGui.QFont()
 large_font.setFamily("Segoe UI")
 large_font.setPointSize(42)
 
+shadow = QGraphicsDropShadowEffect()
+shadow.setBlurRadius(10)
 
 objectives_tuple = ("1N1", "2N1", "3N1", "4N1", "5N1", "1N2a", "1N2b", "1N2c", "2N2a", "2N2b", "3N2a", "3N2b", "4N2a",
                     "4N2b", "5N2", "6N2", "2N3", "3N3", "4N3a", "4N3b", "5N3a", "5N3b", "6N3", "1N4", "2N4", "3N4",
@@ -220,6 +222,13 @@ def increase_score():
     data.score += 1
 
 
+def switch(dictionary):
+    switch_dic = {}
+    for key in dictionary:
+        switch_dic[dictionary[key]] = key
+    return switch_dic
+
+
 def load_usernames_passwords():
     if os.path.isfile("Usernames and passwords.db"):
         connection = sqlite3.connect("Usernames and passwords.db")
@@ -294,6 +303,7 @@ class LoginScreen:
 
         # Gif label
         self.gifLabel = QtWidgets.QLabel(win)
+        self.gifLabel.setGraphicsEffect(shadow)
         self.gifLabel.setGeometry(1325, 300, 500, 300)
         self.gifLabel.setScaledContents(True)
         self.movie = QtGui.QMovie("C:/Users/Michael/Pictures/Saved Pictures/maths_thinking.gif")
@@ -332,9 +342,10 @@ class LoginScreen:
         self.loginButton.clicked.connect(self.check_login)
 
         # Login error label
-        self.loginErrorLabel = QtWidgets.QLabel("Username not found", win)
+        self.loginErrorLabel = QtWidgets.QLabel(win)
         place_widget_centre(self.loginErrorLabel, 350, 40, 510)
         self.loginErrorLabel.setStyleSheet("color: rgb(255,219,88);")
+        self.loginErrorLabel.setText("Username not found")
         self.loginErrorLabel.setFont(button_font_small)
         self.loginErrorLabel.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -390,9 +401,10 @@ class LoginScreen:
 class NewUserScreen:
     def __init__(self):
         # New user title label
-        self.newUserTitleLabel = QtWidgets.QLabel("Fill in the boxes to\ncreate your profile", win)
+        self.newUserTitleLabel = QtWidgets.QLabel(win)
         place_widget_centre(self.newUserTitleLabel, 1000, 115, 160)
         self.newUserTitleLabel.setStyleSheet("color: rgb(255, 255, 255);")
+        self.newUserTitleLabel.setText("Fill in the boxes to\ncreate your profile")
         self.newUserTitleLabel.setFont(sub_title_font)
         self.newUserTitleLabel.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -432,9 +444,10 @@ class NewUserScreen:
         self.newUserClassEntry.setPlaceholderText("Class")
 
         # New user error label
-        self.newUserErrorLabel = QtWidgets.QLabel("Username already taken", win)
+        self.newUserErrorLabel = QtWidgets.QLabel(win)
         place_widget_centre(self.newUserErrorLabel, 350, 40, 510)
         self.newUserErrorLabel.setStyleSheet("color: rgb(255,219,88);")
+        self.newUserErrorLabel.setText("Username already taken")
         self.newUserErrorLabel.setFont(button_font_small)
         self.newUserErrorLabel.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -526,16 +539,17 @@ class NewUserScreen:
 
 class HomeScreen:
     def __init__(self):
-        self.year = "All"
+        self.year = "Year 6"
         self.strand = "Number and place value"
         self.substrand = "Counting in multiples"
         self.objective = "1N1"
         self.chosen_objectives = []
 
         # Username label
-        self.usernameLabel = QtWidgets.QLabel("No one", win)
+        self.usernameLabel = QtWidgets.QLabel(win)
         self.usernameLabel.setGeometry(475, 115, 600, 65)
         self.usernameLabel.setStyleSheet("color: rgb(255, 255, 255);")
+        self.usernameLabel.setText("No one")
         self.usernameLabel.setFont(title_font)
         self.usernameLabel.setAlignment(QtCore.Qt.AlignLeft)
 
@@ -608,7 +622,7 @@ class HomeScreen:
         self.quizAnswersButton.setGraphicsEffect(shadow)
         self.quizAnswersButton.clicked.connect(lambda: self.show_quiz_answers())
 
-        # Show graphs button
+        """# Show graphs button
         self.graphsPageButton = QtWidgets.QPushButton(win)
         self.graphsPageButton.setGeometry(650, 500, 150, 60)
         self.graphsPageButton.setFont(button_font)
@@ -617,7 +631,18 @@ class HomeScreen:
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(50)
         self.graphsPageButton.setGraphicsEffect(shadow)
-        self.graphsPageButton.clicked.connect(lambda: self.graphs_page())
+        self.graphsPageButton.clicked.connect(lambda: self.graphs_page())"""
+
+        # Show graphs button
+        self.showGraphsButton = QtWidgets.QPushButton(win)
+        self.showGraphsButton.setGeometry(650, 500, 150, 60)
+        self.showGraphsButton.setFont(button_font)
+        self.showGraphsButton.setStyleSheet("background-color: rgb(197, 180, 227);")
+        self.showGraphsButton.setText("Show graphs")
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(50)
+        self.showGraphsButton.setGraphicsEffect(shadow)
+        self.showGraphsButton.clicked.connect(lambda: graph.show_sub_plot_graph())
 
         # Quiz background shape
         self.quizBackgroundLabel = QtWidgets.QLabel(win)
@@ -647,9 +672,10 @@ class HomeScreen:
         self.yearCombo = QtWidgets.QComboBox(win)
         self.yearCombo.setGeometry(1200, 485, 370, 40)
         self.yearCombo.setFont(combo_font)
-        year_group_list = ["All", "Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Year 6"]
+        year_group_list = ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5", "Year 6"]
         for item in year_group_list:
             self.yearCombo.addItem(item)
+        self.yearCombo.setCurrentIndex(5)
         self.yearCombo.activated[str].connect(self.update_quiz_selections)
 
         # Year group quiz button
@@ -731,7 +757,7 @@ class HomeScreen:
                    self.statsBackgroundLabel, self.statsTitleLabel, self.statsLabel1, self.statsLabel2,
                    self.quizAnswersButton, self.quizBackgroundLabel, self.quizTitleLabel, self.quizLabel,
                    self.yearCombo, self.strandCombo, self.substrandCombo, self.objectiveCombo, self.yearQuizButton,
-                   self.graphsPageButton, self.strandQuizButton, self.substrandQuizButton, self.objectiveQuizButton)
+                   self.showGraphsButton, self.strandQuizButton, self.substrandQuizButton, self.objectiveQuizButton)
         for widget in widgets:
             widget.show()
         self.yearCombo.setGeometry(1200, 485, 370, 40)
@@ -744,7 +770,7 @@ class HomeScreen:
                    self.statsBackgroundLabel, self.statsTitleLabel, self.statsLabel1, self.statsLabel2,
                    self.quizAnswersButton, self.quizBackgroundLabel, self.quizTitleLabel, self.quizLabel,
                    self.yearCombo, self.strandCombo, self.substrandCombo, self.objectiveCombo, self.yearQuizButton,
-                   self.graphsPageButton, self.strandQuizButton, self.substrandQuizButton, self.objectiveQuizButton)
+                   self.showGraphsButton, self.strandQuizButton, self.substrandQuizButton, self.objectiveQuizButton)
         for widget in widgets:
             widget.hide()
 
@@ -773,68 +799,53 @@ class HomeScreen:
     def graphs_page(self):
         self.hide_widgets()
         graph.show_widgets()
-        home_screen.year = "All"
+        self.yearCombo.setCurrentIndex(5)
+        home_screen.year = "Year 6"
         home_screen.strand = "Number and place value"
         home_screen.substrand = "Counting in multiples"
         home_screen.objective = "1N1"
 
     def start_quiz(self, quiz_type):
-        if quiz_type == "year" and self.year == "All":
+        self.update_quiz_selections()
+        quiz.question_list = []
+        if quiz_type == "year":
+            for objective in objectives_tuple:
+                if objective.startswith(self.year[-1]):
+                    quiz.question_list.append(objective)
+        elif quiz_type == "strand":
+            ref = str(strand_index.get(self.strand))
+            for objective in objectives_tuple:
+                if objective[1:2] == ref and objective.startswith(self.year[-1]):
+                    quiz.question_list.append(objective)
+        elif quiz_type == "sub-strand":
+            ref = str(substrand_index.get(self.substrand))
+            for objective in objectives_tuple:
+                if objective[1:3] == ref and objective.startswith(self.year[-1]):
+                    quiz.question_list.append(objective)
+        elif quiz_type == "objective":
+            quiz.question_list = [self.objective]
+        else:
+            raise TypeError
+        self.chosen_objectives = []
+        if len(quiz.question_list) == 0:
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Information)
-            msg.setWindowTitle("Incorrect quiz selection")
-            msg.setText("All objectives cannot be selected for all strands. "
-                        "Choose a year group, strand, sub-strand or objective.")
+            msg.setWindowTitle("No objectives")
+            msg.setText("There are no objectives for your chosen selection. Please make another selection.")
             x = msg.exec_()
         else:
-            self.update_quiz_selections()
-            quiz.question_list = []
-            if quiz_type == "year":
-                for objective in objectives_tuple:
-                    if objective.startswith(self.year[-1]):
-                        quiz.question_list.append(objective)
-            elif quiz_type == "strand":
-                ref = str(strand_index.get(self.strand))
-                for objective in objectives_tuple:
-                    if self.year == "All":
-                        if objective[1:2] == ref:
-                            quiz.question_list.append(objective)
-                    else:
-                        if objective[1:2] == ref and objective.startswith(self.year[-1]):
-                            quiz.question_list.append(objective)
-            elif quiz_type == "sub-strand":
-                ref = str(substrand_index.get(self.substrand))
-                for objective in objectives_tuple:
-                    if self.year == "All":
-                        if objective[1:3] == ref:
-                            quiz.question_list.append(objective)
-                    else:
-                        if objective[1:3] == ref and objective.startswith(self.year[-1]):
-                            quiz.question_list.append(objective)
-            elif quiz_type == "objective":
-                quiz.question_list = [self.objective]
-            else:
-                raise TypeError
-            self.chosen_objectives = []
-            if len(quiz.question_list) == 0:
-                msg = QMessageBox()
-                msg.setIcon(QMessageBox.Information)
-                msg.setWindowTitle("No objectives")
-                msg.setText("There are no objectives for your chosen selection. Please make another selection.")
-                x = msg.exec_()
-            else:
-                self.hide_widgets()
-                for objective in range(30):
-                    self.chosen_objectives.append(quiz.question_list[random.randint(0, len(quiz.question_list)-1)])
-                data.score = 0
-                quiz.question_number = 1
-                quiz.set_quiz_number()
-                quiz.quiz_number += 1
-                quiz.show_widgets()
-                quiz.scoreLabel.setText("Score: 0 out of 0")
-                quiz.questionNumberLabel.setText("Question 1 of 30")
-                quiz.answerEntry.setFocus()
-                quiz.ask_question(self.chosen_objectives[0])
+            self.hide_widgets()
+            for objective in range(30):
+                self.chosen_objectives.append(quiz.question_list[random.randint(0, len(quiz.question_list)-1)])
+            data.score = 0
+            quiz.question_number = 1
+            quiz.set_quiz_number()
+            quiz.quiz_number += 1
+            quiz.show_widgets()
+            quiz.scoreLabel.setText("Score: 0 out of 0")
+            quiz.questionNumberLabel.setText("Question 1 of 30")
+            quiz.answerEntry.setFocus()
+            quiz.ask_question(self.chosen_objectives[0])
 
     def update_substrand_combo(self):
         substrand_bank = {"Number and place value":
@@ -1002,10 +1013,10 @@ class Graphs:
         self.yearGroupLabel = self.heading_label(120, 250, "Choose year group")
 
         # Strand label
-        self.strandLabel = self.heading_label(120, 400, "Choose strand")
+        self.strandLabel = self.heading_label(120, 410, "Choose strand")
 
         # Sub-strand label
-        self.substrandLabel = self.heading_label(120, 550, "Choose sub-strand")
+        self.substrandLabel = self.heading_label(120, 570, "Choose sub-strand")
 
         # Show strand graph button
         self.showGraphButton = QtWidgets.QPushButton(win)
@@ -1016,18 +1027,51 @@ class Graphs:
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(50)
         self.showGraphButton.setGraphicsEffect(shadow)
-        self.showGraphButton.clicked.connect(lambda: self.set_graph_strand())
+        self.showGraphButton.clicked.connect(lambda: self.show_graph("strand"))
 
         # Show sub-strand graph button
         self.showGraphButton2 = QtWidgets.QPushButton(win)
-        self.showGraphButton2.setGeometry(350, 395, 120, 40)
+        self.showGraphButton2.setGeometry(350, 355, 120, 40)
         self.showGraphButton2.setFont(button_font_small)
         self.showGraphButton2.setStyleSheet("background-color: rgb(197, 180, 227);")
         self.showGraphButton2.setText("Sub-strand")
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(50)
         self.showGraphButton2.setGraphicsEffect(shadow)
-        self.showGraphButton2.clicked.connect(lambda: self.set_graph_substrand())
+        self.showGraphButton2.clicked.connect(lambda: self.show_graph("substrand"))
+
+        # Show objective graph button
+        self.showGraphButton3 = QtWidgets.QPushButton(win)
+        self.showGraphButton3.setGeometry(350, 405, 120, 40)
+        self.showGraphButton3.setFont(button_font_small)
+        self.showGraphButton3.setStyleSheet("background-color: rgb(197, 180, 227);")
+        self.showGraphButton3.setText("Objective")
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(50)
+        self.showGraphButton3.setGraphicsEffect(shadow)
+        self.showGraphButton3.clicked.connect(lambda: self.show_graph("strand_objective"))
+
+        # Show objective graph button
+        self.showGraphButton4 = QtWidgets.QPushButton(win)
+        self.showGraphButton4.setGeometry(350, 565, 120, 40)
+        self.showGraphButton4.setFont(button_font_small)
+        self.showGraphButton4.setStyleSheet("background-color: rgb(197, 180, 227);")
+        self.showGraphButton4.setText("Objective")
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(50)
+        self.showGraphButton4.setGraphicsEffect(shadow)
+        self.showGraphButton4.clicked.connect(lambda: self.show_graph("objective"))
+
+        # sub plot graph button
+        self.showGraphButton5 = QtWidgets.QPushButton(win)
+        self.showGraphButton5.setGeometry(350, 865, 120, 40)
+        self.showGraphButton5.setFont(button_font_small)
+        self.showGraphButton5.setStyleSheet("background-color: rgb(197, 180, 227);")
+        self.showGraphButton5.setText("Sub-plots")
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(50)
+        self.showGraphButton5.setGraphicsEffect(shadow)
+        self.showGraphButton5.clicked.connect(lambda: self.show_sub_plot_graph())
 
         # Return to home screen button
         self.graphToHomeButton = QtWidgets.QPushButton(win)
@@ -1049,7 +1093,217 @@ class Graphs:
         label.setAlignment(QtCore.Qt.AlignLeft)
         return label
 
-    def show_graph(self, categories, marks, x_label="Strand", y_label="% correct", title="QLA by maths strand"):
+    def show_widgets(self):
+        home_screen.yearCombo.setGeometry(110, 300, 370, 40)
+        home_screen.strandCombo.setGeometry(110, 460, 370, 40)
+        home_screen.substrandCombo.setGeometry(110, 620, 370, 40)
+        combos = (home_screen.yearCombo, home_screen.strandCombo, home_screen.substrandCombo)
+        for widget in combos:
+            widget.raise_()
+        widgets = (self.graphTitleLabel, self.selectQuizBackgroundLabel, self.graphBackgroundLabel, self.yearGroupLabel,
+                   self.strandLabel, self.substrandLabel, home_screen.yearCombo, home_screen.strandCombo,
+                   home_screen.substrandCombo, self.showGraphButton, self.showGraphButton2, self.showGraphButton3,
+                   self.showGraphButton4, self.showGraphButton5, self.graphToHomeButton)
+        for widget in widgets:
+            widget.show()
+
+    def hide_widgets(self):
+        widgets = (self.graphTitleLabel, self.selectQuizBackgroundLabel, self.graphBackgroundLabel, self.yearGroupLabel,
+                   self.strandLabel, self.substrandLabel, home_screen.yearCombo, home_screen.strandCombo,
+                   home_screen.substrandCombo, self.showGraphButton, self.showGraphButton2, self.showGraphButton3,
+                   self.showGraphButton4, self.showGraphButton5, self.graphToHomeButton)
+        for widget in widgets:
+            widget.hide()
+
+    def return_to_home(self):
+        self.hide_widgets()
+        if plt:
+            plt.close()
+        home_screen.show_widgets()
+
+    def show_sub_plot_graph(self):
+        # Put data in long format in a dataframe.
+        if plt:
+            plt.close()
+        connection = sqlite3.connect("{}.db".format(login.username))
+        strand_data = self.set_graph_data_strand(connection)
+        substrand_data = self.set_graph_data_substrand(connection)
+        substrand_objective_data = self.set_graph_data_strand_objective(connection)
+        objective_data = self.set_graph_data_objective(connection)
+
+        adjusted_strand_names = []
+        for item in strand_data[0]:
+            adjusted_strand_names.append(strand_index[item])
+
+        fig = plt.figure(num="{} QLA for maths strand {} and sub-strand {}".format(home_screen.year, home_screen.strand,
+                                                                           home_screen.substrand))
+
+        ax1 = fig.add_subplot(221)
+        ax2 = fig.add_subplot(222)
+        ax3 = fig.add_subplot(223)
+        ax4 = fig.add_subplot(224)
+
+        ax1_x_axis = np.arange(len(strand_data[0]))
+        ax1_colours = []
+
+        for strand in strand_data[0]:
+            if strand == home_screen.strand:
+                ax1_colours.append("b")
+            else:
+                ax1_colours.append("gray")
+
+        ax1.bar(ax1_x_axis, strand_data[1], color=ax1_colours)
+        plt.sca(ax1)
+        plt.title("{} QLA by maths strand".format(home_screen.year), size=12)
+        plt.xlabel("Strand")
+        plt.ylabel("% correct")
+        plt.ylim((0, 100))
+        plt.xticks(ax1_x_axis, adjusted_strand_names, size=8)
+        
+        for x, y in zip(ax1_x_axis, strand_data[1]):
+            if strand_data[1][x] > 90:
+                position = -20
+                colour = "w"
+            else:
+                position = 10
+                colour = "k"
+            plt.annotate(strand_data[1][x],  # this is the text
+                         (x, y),  # this is the point to label
+                         textcoords="offset points",  # how to position the text
+                         xytext=(0, position),  # distance from text to points (x,y)
+                         ha='center',
+                         color=colour)  # horizontal alignment can be left, right or center
+
+        ax2_x_axis = np.arange(len(substrand_data[0]))
+        ax2_colours = []
+
+        for substrand in substrand_data[0]:
+            if substrand == home_screen.substrand:
+                ax2_colours.append("b")
+            else:
+                ax2_colours.append("gray")
+
+        ax2.bar(ax2_x_axis, substrand_data[1], color=ax2_colours)
+        plt.sca(ax2)
+        plt.title("{} QLA by sub-strand of {}".format(home_screen.year, home_screen.strand), size=12)
+        plt.xlabel("Sub-strand")
+        plt.ylabel("% correct")
+        plt.ylim((0, 100))
+        plt.xticks(ax2_x_axis, substrand_data[0], size=8)
+
+        for x, y in zip(ax2_x_axis, substrand_data[1]):
+            if substrand_data[1][x] > 90:
+                position = -20
+                colour = "w"
+            else:
+                position = 10
+                colour = "k"
+            plt.annotate(substrand_data[1][x],  # this is the text
+                         (x, y),  # this is the point to label
+                         textcoords="offset points",  # how to position the text
+                         xytext=(0, position),  # distance from text to points (x,y)
+                         ha='center',
+                         color=colour)  # horizontal alignment can be left, right or center
+
+        ax3_x_axis = np.arange(len(substrand_objective_data[0]))
+        ax3_colours = []
+
+        for value in substrand_objective_data[1]:
+            if value < 50:
+                ax3_colours.append("r")
+            elif value > 70:
+                ax3_colours.append("g")
+            else:
+                ax3_colours.append("gray")
+
+        ax3.bar(ax3_x_axis, substrand_objective_data[1], color=ax3_colours)
+        plt.sca(ax3)
+        plt.title("{} QLA by objective of {}".format(home_screen.year, home_screen.strand), size=12)
+        plt.xlabel("Objective")
+        plt.ylabel("% correct")
+        plt.ylim((0, 100))
+        plt.xticks(ax3_x_axis, substrand_objective_data[0], size=8)
+
+        for x, y in zip(ax3_x_axis, substrand_objective_data[1]):
+            if substrand_objective_data[1][x] > 90:
+                position = -20
+                colour = "w"
+            else:
+                position = 10
+                colour = "k"
+            plt.annotate(substrand_objective_data[1][x],  # this is the text
+                         (x, y),  # this is the point to label
+                         textcoords="offset points",  # how to position the text
+                         xytext=(0, position),  # distance from text to points (x,y)
+                         ha='center',
+                         color=colour)  # horizontal alignment can be left, right or center
+
+        ax4_x_axis = np.arange(len(objective_data[0]))
+        ax4_colours = []
+
+        for value in objective_data[1]:
+            if value < 50:
+                ax4_colours.append("r")
+            elif value > 70:
+                ax4_colours.append("g")
+            else:
+                ax4_colours.append("gray")
+
+        ax4.bar(ax4_x_axis, objective_data[1], color=ax4_colours)
+        plt.sca(ax4)
+        plt.title("{} QLA by objective of {}".format(home_screen.year, home_screen.substrand), size=12)
+        plt.xlabel("Objective")
+        plt.ylabel("% correct")
+        plt.ylim((0, 100))
+        plt.xticks(ax4_x_axis, objective_data[0], size=8)
+
+        for x, y in zip(ax4_x_axis, objective_data[1]):
+            if objective_data[1][x] > 90:
+                position = -20
+                colour = "w"
+            else:
+                position = 10
+                colour = "k"
+            plt.annotate(objective_data[1][x],  # this is the text
+                         (x, y),  # this is the point to label
+                         textcoords="offset points",  # how to position the text
+                         xytext=(0, position),  # distance from text to points (x,y)
+                         ha='center',
+                         color=colour)  # horizontal alignment can be left, right or center
+
+        plt.get_current_fig_manager().window.setGeometry(0,
+                                                         round(screen_size.height() * 0.035),
+                                                         screen_size.width(),
+                                                         round(screen_size.height() * 0.92))
+        plt.tight_layout(h_pad=0)
+        plt.suptitle("{} maths QLA".format(login.username), size=20)
+        plt.subplots_adjust(top=0.9)
+        plt.show()
+        connection.close()
+
+    def show_graph(self, graph_type):
+        connection = sqlite3.connect("{}.db".format(login.username))
+        if graph_type == "strand":
+            data_list = self.set_graph_data_strand(connection)
+        elif graph_type == "substrand":
+            data_list = self.set_graph_data_substrand(connection)
+        elif graph_type == "strand_objective":
+            data_list = self.set_graph_data_strand_objective(connection)
+        elif graph_type == "objective":
+            data_list = self.set_graph_data_objective(connection)
+        else:
+            TypeError
+        if len(data_list[0]) == 0:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setWindowTitle("No data")
+            msg.setText("There is no data for your chosen selections. Please make a different selection.")
+            x = msg.exec_()
+        else:
+            self.create_graph(data_list[0], data_list[1], x_label=data_list[2], y_label=data_list[3], title=data_list[4])
+            connection.close()
+
+    def create_graph(self, categories, marks, x_label="Strand", y_label="% correct", title="QLA by maths strand"):
         # Put data in long format in a dataframe.
         if plt:
             plt.close()
@@ -1086,49 +1340,18 @@ class Graphs:
         plt.get_current_fig_manager().window.setGeometry(600, 150, 1250, 650)
         plt.show()
 
-    def show_widgets(self):
-        home_screen.yearCombo.setGeometry(110, 300, 370, 40)
-        home_screen.strandCombo.setGeometry(110, 450, 370, 40)
-        home_screen.substrandCombo.setGeometry(110, 600, 370, 40)
-        combos = (home_screen.yearCombo, home_screen.strandCombo, home_screen.substrandCombo)
-        for widget in combos:
-            widget.raise_()
-        widgets = (self.graphTitleLabel, self.selectQuizBackgroundLabel, self.graphBackgroundLabel, self.yearGroupLabel,
-                   self.strandLabel, self.substrandLabel, home_screen.yearCombo, home_screen.strandCombo,
-                   home_screen.substrandCombo, self.showGraphButton, self.showGraphButton2, self.graphToHomeButton)
-        for widget in widgets:
-            widget.show()
-
-    def hide_widgets(self):
-        widgets = (self.graphTitleLabel, self.selectQuizBackgroundLabel, self.graphBackgroundLabel, self.yearGroupLabel,
-                   self.strandLabel, self.substrandLabel, home_screen.yearCombo, home_screen.strandCombo,
-                   home_screen.substrandCombo, self.showGraphButton, self.showGraphButton2, self.graphToHomeButton)
-        for widget in widgets:
-            widget.hide()
-
-    def return_to_home(self):
-        self.hide_widgets()
-        if plt:
-            plt.close()
-        home_screen.show_widgets()
-
-    def set_graph_strand(self):
-        connection = sqlite3.connect("{}.db".format(login.username))
+    def set_graph_data_strand(self, connection):
         data_frame = pd.read_sql_query("SELECT * FROM QUIZ", connection)
         objectives = []
         averages = []
-        if home_screen.year == "All":
-            year_label = "All year groups"
-            year_selected = ("1", "2", "3", "4", "5", "6")
-        else:
-            year_label = home_screen.year
-            year_selected = home_screen.year[-1]
+        year_label = home_screen.year
+        year_selected = home_screen.year[-1]
         for key in strand_index:
             value = strand_index[key]
             marks = 0
             total = 0
             for row in data_frame.itertuples():
-                if (row[4][1]) == value and row[4][0] in year_selected:
+                if row[4][1] == value and row[4][0] in year_selected:
                     marks += int(row[8])
                     total += 1
             if total == 0:
@@ -1139,46 +1362,30 @@ class Graphs:
             else:
                 objectives.append(value)
                 averages.append(round(100 * (marks / total)))
-        connection.close()
         full_objectives = []
-        switch = {}
-        for key in strand_index:
-            switch[strand_index[key]] = key
+        dic = switch(strand_index)
         for objective in objectives:
-            full_objectives.append(switch[objective])
-        if (len(full_objectives)) == 0:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Information)
-            msg.setWindowTitle("No data")
-            msg.setText("There is no data for your chosen selections. Please make a different selection.")
-            x = msg.exec_()
-        else:
-            self.show_graph(full_objectives, averages, x_label="Strand", y_label="% correct",
-                            title="{} QLA by maths strand".format(year_label))
+            full_objectives.append(dic[objective])
+        return (full_objectives, averages, "Strand", "% correct", "{} QLA by maths strand".format(year_label))
 
-    def set_graph_substrand(self):
-        connection = sqlite3.connect("{}.db".format(login.username))
+    def set_graph_data_substrand(self, connection):
         data_frame = pd.read_sql_query("SELECT * FROM QUIZ", connection)
         objectives = []
         averages = []
-        if home_screen.year == "All":
-            year_label = "All year groups"
-            year_selected = ("1", "2", "3", "4", "5", "6")
-        else:
-            year_label = home_screen.year
-            year_selected = home_screen.year[-1]
+        year_label = home_screen.year
+        year_selected = home_screen.year[-1]
         strand_selected = strand_index[home_screen.strand]
         for key in substrand_index:
             value = substrand_index[key]
             marks = 0
             total = 0
             for row in data_frame.itertuples():
-                if (row[4][1:4]) in ("F10", "F11", "F12"):
-                    if (row[4][1:4]) == value[:3] and row[4][0] in year_selected and row[4][1] == strand_selected:
+                if row[4][1:4] in ("F10", "F11", "F12"):
+                    if row[4][1:4] == value[:3] and row[4][0] in year_selected and row[4][1] == strand_selected:
                         marks += int(row[8])
                         total += 1
                 else:
-                    if (row[4][1:3]) == value[:2] and row[4][0] in year_selected and row[4][1] == strand_selected:
+                    if row[4][1:3] == value[:2] and row[4][0] in year_selected and row[4][1] == strand_selected:
                         marks += int(row[8])
                         total += 1
             if total == 0:
@@ -1189,22 +1396,70 @@ class Graphs:
             else:
                 objectives.append(value)
                 averages.append(round(100 * (marks / total)))
-        connection.close()
-        switch = {}
-        for key in substrand_index:
-            switch[substrand_index[key]] = key
+        dic = switch(substrand_index)
         full_objectives = []
         for objective in objectives:
-            full_objectives.append(switch[objective])
-        if (len(full_objectives)) == 0:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Information)
-            msg.setWindowTitle("No data")
-            msg.setText("There is no data for your chosen selections. Please make a different selection.")
-            x = msg.exec_()
-        else:
-            self.show_graph(full_objectives, averages, x_label="Sub-strand", y_label="% correct",
-                            title="{} QLA by sub-strand for {}".format(year_label, home_screen.strand))
+            full_objectives.append(dic[objective])
+        return (full_objectives, averages, "Sub-strand", "% correct",
+                    "{} QLA by sub-strand of {}".format(year_label, home_screen.strand))
+
+    def set_graph_data_strand_objective(self, connection):
+        data_frame = pd.read_sql_query("SELECT * FROM QUIZ", connection)
+        objectives = []
+        averages = []
+        year_label = home_screen.year
+        year_selected = home_screen.year[-1]
+        strand_selected = strand_index[home_screen.strand]
+        for objective in objectives_tuple:
+            marks = 0
+            total = 0
+            for row in data_frame.itertuples():
+                if row[4] == objective and row[4][0] in year_selected and row[4][1] == strand_selected:
+                    marks += int(row[8])
+                    total += 1
+            if total == 0:
+                pass
+            elif marks == 0:
+                objectives.append(objective)
+                averages.append(0)
+            else:
+                objectives.append(objective)
+                averages.append(round(100 * (marks / total)))
+        return (objectives, averages, "Objective", "% correct", "{} QLA by objective for {}".format(year_label,
+                                                                                                    home_screen.strand))
+
+    def set_graph_data_objective(self, connection):
+        data_frame = pd.read_sql_query("SELECT * FROM QUIZ", connection)
+        objectives = []
+        averages = []
+        year_label = home_screen.year
+        year_selected = home_screen.year[-1]
+        strand_selected = strand_index[home_screen.strand]
+        substrand_selected = substrand_index[home_screen.substrand]
+        for objective in objectives_tuple:
+            marks = 0
+            total = 0
+            for row in data_frame.itertuples():
+                if row[4][1:4] in ("F10", "F11", "F12"):
+                    row_strand = row[4][1:4]
+                    value = substrand_selected[:3]
+                else:
+                    row_strand = row[4][1:3]
+                    value = substrand_selected[:2]
+                if row[4] == objective and row[4][0] in year_selected and row[4][1] == strand_selected and row_strand ==\
+                        value:
+                    marks += int(row[8])
+                    total += 1
+            if total == 0:
+                pass
+            elif marks == 0:
+                objectives.append(objective)
+                averages.append(0)
+            else:
+                objectives.append(objective)
+                averages.append(round(100 * (marks / total)))
+        return (objectives, averages, "Objective", "% correct",
+                "{} QLA by objective for {}".format(year_label, home_screen.substrand))
 
 
 class Quiz:
@@ -1215,6 +1470,30 @@ class Quiz:
         self.question_list = []
         self.question_text = ""
         self.quiz_number = 0
+        
+        self.image_bank_1 = []
+        self.image_bank_2 = []
+        self.image_bank_3 = []
+
+        self.text_label_1 = QtWidgets.QLabel(win)
+        self.text_label_1.setFont(test_font)
+        self.text_label_1.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.text_label_2 = QtWidgets.QLabel(win)
+        self.text_label_2.setFont(test_font)
+        self.text_label_2.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.text_label_3 = QtWidgets.QLabel(win)
+        self.text_label_3.setFont(test_font)
+        self.text_label_3.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.text_label_4 = QtWidgets.QLabel(win)
+        self.text_label_4.setFont(test_font)
+        self.text_label_4.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.text_label_5 = QtWidgets.QLabel(win)
+        self.text_label_5.setFont(test_font)
+        self.text_label_5.setAlignment(QtCore.Qt.AlignCenter)
 
         # Question number label
         self.questionNumberLabel = QtWidgets.QLabel("Question 1 of 30", win)
@@ -1277,7 +1556,7 @@ class Quiz:
         self.movie.start()
 
         # Final score label
-        self.finalScoreLabel = QtWidgets.QLabel("Score: 0 out of 0", win)
+        self.finalScoreLabel = QtWidgets.QLabel(win)
         place_widget_centre(self.finalScoreLabel, 1200, 150, 350)
         self.finalScoreLabel.setStyleSheet("color: rgb(255, 255, 255);")
         self.finalScoreLabel.setFont(title_font)
@@ -1308,7 +1587,8 @@ class Quiz:
 
     def hide_widgets(self):
         widgets = (self.questionNumberLabel, self.questionLabel, self.answerEntry, self.submitAnswerButton,
-                   self.quitQuizButton, self.scoreLabel, self.finalScoreLabel, self.endOfQuizButton)
+                   self.quitQuizButton, self.scoreLabel, self.finalScoreLabel, self.endOfQuizButton, self.text_label_5,
+                   self.text_label_2, self.text_label_3, self.text_label_4, self.text_label_5)
         for widget in widgets:
             widget.hide()
 
@@ -1317,18 +1597,106 @@ class Quiz:
         self.question = Qu(objective)
         self.correct_answer = self.question.correct_answer()
         self.question_text = self.question.question_text()
-        try:
-            pixmap = QtGui.QPixmap(self.question.question.image_1_ref)
-            self.image1Label.setPixmap(pixmap)
-            place_widget_centre(self.image1Label, self.question.question.image_1_width,
-                                self.question.question.image_1_height, self.question.question.image_1_y)
-            self.image1Label.setScaledContents(True)
-            self.image1Label.show()
+
+        if self.question.multi_plot():
+            self.multi_plot()
             place_widget_centre(self.questionLabel, 1200, 150, self.question.question.question_label_y)
-        except:
-            pass
+            
+        if self.question.place_text():
+            self.place_text()
+
         self.questionLabel.setText(self.question_text)
 
+    def multi_plot(self):
+        self.image_bank_1 = []
+        self.image_bank_2 = []
+        self.image_bank_3 = []
+
+        for i in range(self.question.question.image_1_frequency):
+            image = QtWidgets.QLabel(win)
+            pixmap = QtGui.QPixmap(self.question.question.image_1_path)
+            image.setPixmap(pixmap)
+            image.setGeometry(self.question.question.image_1_x_coord[i], self.question.question.image_1_y_coord[i],
+                              self.question.question.image_1_width, self.question.question.image_1_height)
+            image.setScaledContents(True)
+            self.image_bank_1.append(image)
+            image.show()
+
+        if self.question.question.total_images > 1:
+            for i in range(self.question.question.image_2_frequency):
+                # Background image
+                image = QtWidgets.QLabel(win)
+                pixmap = QtGui.QPixmap(self.question.question.image_2_path)
+                image.setPixmap(pixmap)
+                image.setGeometry(self.question.question.image_2_x_coord[i], self.question.question.image_2_y_coord[i],
+                                  self.question.question.image_2_width, self.question.question.image_2_height)
+                image.setScaledContents(True)
+                self.image_bank_2.append(image)
+                image.show()
+            
+        if self.question.question.total_images > 2:
+            for i in range(self.question.question.image_3_frequency):
+                # Background image
+                image = QtWidgets.QLabel(win)
+                pixmap = QtGui.QPixmap(self.question.question.image_3_path)
+                image.setPixmap(pixmap)
+                image.setGeometry(self.question.question.image_3_x_coord[i], self.question.question.image_3_y_coord[i],
+                                  self.question.question.image_3_width, self.question.question.image_3_height)
+                image.setScaledContents(True)
+                self.image_bank_3.append(image)
+                image.show()
+
+    def place_text(self):
+        self.text_label_1.setGeometry(self.question.question.text_1_x_coord,
+                                      self.question.question.text_1_y_coord,
+                                      self.question.question.text_1_width,
+                                      self.question.question.text_1_height)
+        self.text_label_1.setFont(test_font)
+        self.text_label_1.setText(self.question.question.text_1_text)
+        self.text_label_1.raise_()
+        self.text_label_1.show()
+        
+        if self.question.question.total_text >= 2:
+            self.text_label_2.setGeometry(self.question.question.text_2_x_coord,
+                                          self.question.question.text_2_y_coord,
+                                          self.question.question.text_2_width,
+                                          self.question.question.text_2_height)
+            self.text_label_2.setFont(test_font)
+            self.text_label_2.setText(self.question.question.text_2_text)
+            self.text_label_2.raise_()
+            self.text_label_2.show()
+            
+        if self.question.question.total_text >= 3:
+            self.text_label_3.setGeometry(self.question.question.text_3_x_coord,
+                                          self.question.question.text_3_y_coord,
+                                          self.question.question.text_3_width,
+                                          self.question.question.text_3_height)
+            self.text_label_3.setFont(test_font)
+            self.text_label_3.setText(self.question.question.text_3_text)
+            self.text_label_3.raise_()
+            self.text_label_3.show()
+            
+        if self.question.question.total_text >= 4:
+            self.text_label_4.setGeometry(self.question.question.text_4_x_coord,
+                                          self.question.question.text_4_y_coord,
+                                          self.question.question.text_4_width,
+                                          self.question.question.text_4_height)
+            self.text_label_4.setFont(test_font)
+            self.text_label_4.setText(self.question.question.text_4_text)
+            self.text_label_4.raise_()
+            self.text_label_4.show()
+            
+        if self.question.question.total_text >= 5:
+            self.text_label_5.setGeometry(self.question.question.text_5_x_coord,
+                                          self.question.question.text_5_y_coord,
+                                          self.question.question.text_5_width,
+                                          self.question.question.text_5_height)
+            self.text_label_5.setFont(test_font)
+            self.text_label_5.setText(self.question.question.text_5_text)
+            self.text_label_5.raise_()
+            self.text_label_5.show()
+            
+    
     def submit_answer(self):
         self.check_answer()
         self.answerEntry.setText("")
@@ -1336,15 +1704,34 @@ class Quiz:
         self.questionNumberLabel.setText("Question {} of 30".format(self.question_number))
         self.update_score_label()
         self.answerEntry.setFocus()
+
+        self.remove_multi_image()
+
         if self.question_number > 30:
             self.end_quiz()
         else:
-            self.image1Label.hide()
             self.ask_question(home_screen.chosen_objectives[self.question_number - 1])
+        # Remove any images
+        try:
+            self.image1Label.hide()
+        except:
+            pass
+
+    def remove_multi_image(self):
+        for image_list in (self.image_bank_1, self.image_bank_2, self.image_bank_3):
+            for image in image_list:
+                image.hide()
+
+    def remove_text(self):
+        self.text_label_1.hide()
+        self.text_label_2.hide()
+        self.text_label_3.hide()
+        self.text_label_4.hide()
+        self.text_label_5.hide()
 
     def check_answer(self):
         user_answer = self.answerEntry.text()
-        if user_answer == self.correct_answer:
+        if user_answer.lower() == self.correct_answer.lower():
             data.score += 1
             self.update_database(user_answer, 1)
             self.correct_gif()
@@ -1386,11 +1773,15 @@ class Quiz:
         read_data(login.username)
         data.set_stats()
         quiz.hide_widgets()
+        self.remove_text()
         self.finalScoreLabel.show()
         self.finalScoreLabel.setText("Final score: {} out of {}".format(data.score, self.question_number - 1))
         self.endOfQuizButton.show()
 
     def quit_quiz(self):
+        self.remove_multi_image()
+        self.remove_text()
+
         read_data(login.username)
         data.set_stats()
         self.hide_widgets()
